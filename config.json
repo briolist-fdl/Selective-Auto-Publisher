@@ -1,0 +1,11 @@
+{
+  "token": "",
+  "clientId": "1493291008509739158",
+  "guildId": "327525048246206465",
+  "allowedChannelIds": ["DIN_KANAL_ID"],
+  "filters": {
+    "mode": "allowed_bots",
+    "allowedBotIds": ["DIN_BOT_ID"],
+    "keywordsAny": []
+  }
+}
