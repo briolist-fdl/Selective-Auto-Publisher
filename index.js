@@ -5,11 +5,27 @@ import {
   MessageFlags,
   PermissionsBitField
 } from "discord.js";
-import config from "./config.json" with { type: "json" };
+import rawConfig from "./config.json" with { type: "json" };
+
+const envToken = process.env.BOT_TOKEN;
+
+const config = {
+  ...rawConfig,
+  token: envToken || rawConfig.token
+};
+
+console.log("Starting bot...");
+console.log("BOT_TOKEN in env:", "BOT_TOKEN" in process.env);
+console.log("BOT_TOKEN length:", envToken ? envToken.length : 0);
+console.log("Token exists:", Boolean(config.token));
+console.log("Client ID:", config.clientId);
+console.log("Guild ID:", config.guildId);
 
 const CONFIG_PATH = "./config.json";
 
 console.log("Starting bot...");
+console.log("BOT_TOKEN in env:", "BOT_TOKEN" in process.env);
+console.log("BOT_TOKEN length:", envToken ? envToken.length : 0);
 console.log("Token exists:", Boolean(config.token));
 console.log("Client ID:", config.clientId);
 console.log("Guild ID:", config.guildId);
