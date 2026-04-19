@@ -32,11 +32,11 @@ const envToken = process.env.BOT_TOKEN;
 const token = process.env.BOT_TOKEN;
 
 console.log("Starting bot...");
-console.log("BOT_TOKEN in env:", "BOT_TOKEN" in process.env);
-console.log("BOT_TOKEN length:", envToken ? envToken.length : 0);
-console.log("Token exists:", Boolean(config.token));
-console.log("Client ID:", config.clientId);
-console.log("Guild ID:", config.guildId);
+console.log("BOT_TOKEN in env:", Boolean(process.env.BOT_TOKEN));
+console.log("BOT_TOKEN length:", token ? token.length : 0);
+console.log("Token exists:", Boolean(token));
+console.log("Client ID:", process.env.CLIENT_ID);
+console.log("Guild ID:", process.env.GUILD_ID);
 
 const client = new Client({
   intents: [
