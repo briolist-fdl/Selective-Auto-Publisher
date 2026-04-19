@@ -124,6 +124,21 @@ const commands = [
     .setDescription("List allowed channel IDs")
 ].map(command => command.toJSON());
 
+new SlashCommandBuilder()
+  .setName("audit-channel-set")
+  .setDescription("Set audit channel")
+  .addStringOption(option =>
+    option.setName("id").setDescription("Channel ID").setRequired(true)
+  ),
+
+new SlashCommandBuilder()
+  .setName("audit-channel-clear")
+  .setDescription("Clear audit channel"),
+
+new SlashCommandBuilder()
+  .setName("audit-channel-show")
+  .setDescription("Show audit channel"),
+
 const rest = new REST({ version: "10" }).setToken(token);
 
 try {
