@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import rawConfig from "./config.json" with { type: "json" };
 import { testDbConnection, initDb } from "./db.js";
+import { setGuildMode } from "./db.js";
 
 const envToken = process.env.BOT_TOKEN;
 
@@ -170,14 +171,16 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     if (name === "mode") {
-      config.filters.mode = interaction.options.getString("value", true);
-      saveConfig();
-      await interaction.reply({
-        content: "Mode set to " + config.filters.mode + ".",
-        ephemeral: true
-      });
-      return;
-    }
+  const value = interaction.options.getString("value", true);
+
+  await setGuildMode(interaction.guildId, value);
+
+  await interaction.reply({
+    content: "Mode set to " + value + " (saved to DB).",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "bot-add") {
       const id = interaction.options.getString("id", true);
