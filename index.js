@@ -6,7 +6,7 @@ import {
   PermissionsBitField
 } from "discord.js";
 import rawConfig from "./config.json" with { type: "json" };
-import { testDbConnection, initDb, setGuildMode, getGuildMode } from "./db.js";
+import { testDbConnection, initDb, setGuildMode, getGuildMode, addAllowedChannel, getAllowedChannels } from "./db.js";
 
 const envToken = process.env.BOT_TOKEN;
 
@@ -47,9 +47,12 @@ function normalize(text) {
   return (text ?? "").toLowerCase().trim();
 }
 
-function isAllowedChannel(message) {
-  if (!config.allowedChannelIds.length) return false;
-  return config.allowedChannelIds.includes(message.channelId);
+async function isAllowedChannel(message) {
+  const allowedChannels = await getAllowedChannels(message.guildId);
+
+  if (!allowedChannels.length) return false;
+
+  return allowedChannels.includes(message.channelId);
 }
 
 function isAlreadyPublished(message) {
@@ -102,7 +105,7 @@ client.on("messageCreate", async (message) => {
   try {
     if (!message.inGuild()) return;
     if (message.system) return;
-    if (!isAllowedChannel(message)) return;
+    if (!(await isAllowedChannel(message))) return;
     if (isAlreadyPublished(message)) return;
     if (!(await matchesMode(message))) return;
     if (!matchesKeywords(message)) return;

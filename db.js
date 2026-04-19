@@ -118,3 +118,36 @@ export async function getGuildMode(guildId) {
 
   return result.rows[0]?.mode ?? "allowed_bots";
 }
+
+export async function addAllowedChannel(guildId, channelId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      INSERT INTO allowed_channels (guild_id, channel_id)
+      VALUES ($1, $2)
+      ON CONFLICT (guild_id, channel_id) DO NOTHING
+    `,
+    [guildId, channelId]
+  );
+}
+
+export async function getAllowedChannels(guildId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  const result = await pool.query(
+    `
+      SELECT channel_id
+      FROM allowed_channels
+      WHERE guild_id = $1
+      ORDER BY channel_id
+    `,
+    [guildId]
+  );
+
+  return result.rows.map((row) => row.channel_id);
+}
