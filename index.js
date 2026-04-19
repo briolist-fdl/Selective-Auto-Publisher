@@ -250,6 +250,50 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
 
+    if (name === "blockedkeyword-add") {
+      const word = interaction.options.getString("word", true).trim().toLowerCase();
+      config.filters.blockedKeywords ??= [];
+
+      if (!config.filters.blockedKeywords.includes(word)) {
+        config.filters.blockedKeywords.push(word);
+        saveConfig();
+      }
+
+      await interaction.reply({
+        content: "Added blocked keyword " + word + ".",
+        ephemeral: true
+      });
+      return;
+    }
+
+    if (name === "blockedkeyword-remove") {
+      const word = interaction.options.getString("word", true).trim().toLowerCase();
+      config.filters.blockedKeywords ??= [];
+
+      config.filters.blockedKeywords = config.filters.blockedKeywords.filter(
+        (keyword) => keyword !== word
+      );
+      saveConfig();
+
+      await interaction.reply({
+        content: "Removed blocked keyword " + word + ".",
+        ephemeral: true
+      });
+      return;
+    }
+
+    if (name === "blockedkeyword-list") {
+      config.filters.blockedKeywords ??= [];
+
+      await interaction.reply({
+        content: config.filters.blockedKeywords.length
+          ? config.filters.blockedKeywords.join("\n")
+          : "No blocked keywords set.",
+        ephemeral: true
+      });
+      return;
+    }
+
     if (name === "channel-add") {
       const id = interaction.options.getString("id", true);
       if (!config.allowedChannelIds.includes(id)) {

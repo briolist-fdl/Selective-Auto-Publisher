@@ -1,7 +1,11 @@
+import "dotenv/config";
+
 console.log("Deploying commands...");
 
 import { REST, Routes, SlashCommandBuilder } from "discord.js";
 import config from "./config.json" with { type: "json" };
+
+const token = process.env.BOT_TOKEN || config.token;
 
 const commands = [
   new SlashCommandBuilder()
@@ -71,6 +75,30 @@ const commands = [
     .setName("keyword-list")
     .setDescription("List allowed keywords"),
 
+      new SlashCommandBuilder()
+    .setName("blockedkeyword-add")
+    .setDescription("Add a blocked keyword")
+    .addStringOption(option =>
+      option
+        .setName("word")
+        .setDescription("Keyword to block")
+        .setRequired(true)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("blockedkeyword-remove")
+    .setDescription("Remove a blocked keyword")
+    .addStringOption(option =>
+      option
+        .setName("word")
+        .setDescription("Keyword to remove from blocked list")
+        .setRequired(true)
+    ),
+
+  new SlashCommandBuilder()
+    .setName("blockedkeyword-list")
+    .setDescription("List blocked keywords"),
+
   new SlashCommandBuilder()
     .setName("channel-add")
     .setDescription("Add an allowed channel")
@@ -96,7 +124,7 @@ const commands = [
     .setDescription("List allowed channel IDs")
 ].map(command => command.toJSON());
 
-const rest = new REST({ version: "10" }).setToken(config.token);
+const rest = new REST({ version: "10" }).setToken(token);
 
 try {
   console.log("Deploying slash commands...");
@@ -109,4 +137,5 @@ try {
   console.error(error);
 }
 
+console.log("Token exists:", Boolean(token));
 console.log("Done!");
