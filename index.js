@@ -344,8 +344,11 @@ client.on("warn", (info) => {
 });
 
 try {
+  console.log("Running DB startup...");
   await testDbConnection();
+  console.log("Running initDb...");
   await initDb();
+  console.log("Finished initDb");
 } catch (error) {
   console.error("Database startup failed:", error);
 }
