@@ -121,8 +121,7 @@ const commands = [
 
   new SlashCommandBuilder()
     .setName("channel-list")
-    .setDescription("List allowed channel IDs")
-].map(command => command.toJSON());
+    .setDescription("List allowed channel IDs"),
 
 new SlashCommandBuilder()
   .setName("audit-channel-set")
@@ -138,6 +137,8 @@ new SlashCommandBuilder()
 new SlashCommandBuilder()
   .setName("audit-channel-show")
   .setDescription("Show audit channel"),
+
+].map(command => command.toJSON());
 
 const rest = new REST({ version: "10" }).setToken(token);
 
