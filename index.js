@@ -6,7 +6,18 @@ import {
   PermissionsBitField
 } from "discord.js";
 import rawConfig from "./config.json" with { type: "json" };
-import { testDbConnection, initDb, setGuildMode, getGuildMode, addAllowedChannel, getAllowedChannels } from "./db.js";
+import {
+  testDbConnection,
+  initDb,
+  setGuildMode,
+  getGuildMode,
+  addAllowedChannel,
+  removeAllowedChannel,
+  getAllowedChannels,
+  addAllowedBot,
+  removeAllowedBot,
+  getAllowedBots
+} from "./db.js";
 
 const envToken = process.env.BOT_TOKEN;
 
@@ -14,13 +25,6 @@ const config = {
   ...rawConfig,
   token: envToken || rawConfig.token
 };
-
-console.log("Starting bot...");
-console.log("BOT_TOKEN in env:", "BOT_TOKEN" in process.env);
-console.log("BOT_TOKEN length:", envToken ? envToken.length : 0);
-console.log("Token exists:", Boolean(config.token));
-console.log("Client ID:", config.clientId);
-console.log("Guild ID:", config.guildId);
 
 const CONFIG_PATH = "./config.json";
 
@@ -63,19 +67,20 @@ function isAlreadyPublished(message) {
 }
 
 async function matchesMode(message) {
-  const mode = await getGuildMode(message.guildId);
+  const guildId = message.guild.id;
+  const mode = await getGuildMode(guildId);
 
   if (mode === "all") return true;
 
   if (mode === "only_bots") {
-    return message.author?.bot === true;
+    return message.author.bot === true;
   }
 
   if (mode === "allowed_bots") {
-    return (
-      message.author?.bot === true &&
-      config.filters.allowedBotIds.includes(message.author.id)
-    );
+    if (!message.author.bot) return false;
+
+    const allowedBots = await getAllowedBots(guildId);
+    return allowedBots.includes(message.author.id);
   }
 
   return false;
@@ -84,17 +89,15 @@ async function matchesMode(message) {
 function matchesKeywords(message) {
   const content = normalize(message.content);
 
-  // 🔴 BLOCKED KEYWORDS (ny)
-  const blocked = config.filters.blockedKeywords ?? [];
-  if (blocked.some(keyword => content.includes(keyword))) {
+  const blocked = (config.filters?.blockedKeywords ?? []).map(normalize);
+  if (blocked.some((keyword) => keyword && content.includes(keyword))) {
     return false;
   }
 
-  // 🟢 EXISTING LOGIC
-  const keywords = config.filters.keywordsAny ?? [];
+  const keywords = (config.filters?.keywordsAny ?? []).map(normalize);
   if (!keywords.length) return true;
 
-  return keywords.some(keyword => content.includes(keyword));
+  return keywords.some((keyword) => keyword && content.includes(keyword));
 }
 
 client.once("clientReady", () => {
@@ -154,32 +157,42 @@ client.on("interactionCreate", async (interaction) => {
     const name = interaction.commandName;
 
     if (name === "status") {
-      const channelsText = config.allowedChannelIds.length
-        ? config.allowedChannelIds.map((id) => "<#" + id + ">").join(", ")
-        : "None";
+  const mode = await getGuildMode(interaction.guildId);
+  const allowedChannels = await getAllowedChannels(interaction.guildId);
+  const allowedBots = await getAllowedBots(interaction.guildId);
 
-      const botsText = config.filters.allowedBotIds.length
-        ? config.filters.allowedBotIds.join(", ")
-        : "None";
+  const channelsText = allowedChannels.length
+    ? allowedChannels.map((id) => "<#" + id + ">").join(", ")
+    : "None";
 
-      const keywordsText = config.filters.keywordsAny.length
-        ? config.filters.keywordsAny.join(", ")
-        : "None";
+  const botsText = allowedBots.length
+    ? allowedBots.join(", ")
+    : "None";
 
-      await interaction.reply({
-        content:
-          "**Mode:** " +
-          config.filters.mode +
-          "\n**Allowed channels:** " +
-          channelsText +
-          "\n**Allowed bots:** " +
-          botsText +
-          "\n**Keywords:** " +
-          keywordsText,
-        ephemeral: true
-      });
-      return;
-    }
+  const keywordsText = (config.filters?.keywordsAny ?? []).length
+    ? config.filters.keywordsAny.join(", ")
+    : "None";
+
+  const blockedKeywordsText = (config.filters?.blockedKeywords ?? []).length
+    ? config.filters.blockedKeywords.join(", ")
+    : "None";
+
+  await interaction.reply({
+    content:
+      "**Mode:** " +
+      mode +
+      "\n**Allowed channels:** " +
+      channelsText +
+      "\n**Allowed bots:** " +
+      botsText +
+      "\n**Keywords:** " +
+      keywordsText +
+      "\n**Blocked keywords:** " +
+      blockedKeywordsText,
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "mode") {
   const value = interaction.options.getString("value", true);
@@ -194,40 +207,40 @@ client.on("interactionCreate", async (interaction) => {
 }
 
     if (name === "bot-add") {
-      const id = interaction.options.getString("id", true);
-      if (!config.filters.allowedBotIds.includes(id)) {
-        config.filters.allowedBotIds.push(id);
-        saveConfig();
-      }
-      await interaction.reply({
-        content: "Added bot ID " + id + ".",
-        ephemeral: true
-      });
-      return;
-    }
+  const id = interaction.options.getString("id", true);
+
+  await addAllowedBot(interaction.guildId, id);
+
+  await interaction.reply({
+    content: "Added bot ID " + id + " (saved to DB).",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "bot-remove") {
-      const id = interaction.options.getString("id", true);
-      config.filters.allowedBotIds = config.filters.allowedBotIds.filter(
-        (botId) => botId !== id
-      );
-      saveConfig();
-      await interaction.reply({
-        content: "Removed bot ID " + id + ".",
-        ephemeral: true
-      });
-      return;
-    }
+  const id = interaction.options.getString("id", true);
+
+  await removeAllowedBot(interaction.guildId, id);
+
+  await interaction.reply({
+    content: "Removed bot ID " + id + " (removed from DB).",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "bot-list") {
-      await interaction.reply({
-        content: config.filters.allowedBotIds.length
-          ? config.filters.allowedBotIds.join("\n")
-          : "No allowed bot IDs set.",
-        ephemeral: true
-      });
-      return;
-    }
+  const botIds = await getAllowedBots(interaction.guildId);
+
+  await interaction.reply({
+    content: botIds.length
+      ? botIds.join("\n")
+      : "No allowed bot IDs set.",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "keyword-add") {
       const word = interaction.options.getString("word", true).trim();
@@ -322,31 +335,28 @@ client.on("interactionCreate", async (interaction) => {
 }
 
     if (name === "channel-remove") {
-      const id = interaction.options.getString("id", true);
-      config.allowedChannelIds = config.allowedChannelIds.filter(
-        (channelId) => channelId !== id
-      );
-      saveConfig();
-      await interaction.reply({
-        content: "Removed channel ID " + id + ".",
-        ephemeral: true
-      });
-      return;
-    }
+  const id = interaction.options.getString("id", true);
+
+  await removeAllowedChannel(interaction.guildId, id);
+
+  await interaction.reply({
+    content: "Removed channel ID " + id + " (removed from DB).",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "channel-list") {
-      await interaction.reply({
-        content: config.allowedChannelIds.length
-          ? config.allowedChannelIds.map((id) => "<#" + id + ">").join("\n")
-          : "No allowed channels set.",
-        ephemeral: true
-      });
-      return;
-    }
-  } catch (error) {
-    console.error("Interaction error:", error);
-  }
-});
+  const allowedChannels = await getAllowedChannels(interaction.guildId);
+
+  await interaction.reply({
+    content: allowedChannels.length
+      ? allowedChannels.map((id) => "<#" + id + ">").join("\n")
+      : "No allowed channels set.",
+    ephemeral: true
+  });
+  return;
+}
 
 client.on("error", (error) => {
   console.error("Client error:", error);

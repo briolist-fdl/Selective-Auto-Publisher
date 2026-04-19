@@ -134,6 +134,20 @@ export async function addAllowedChannel(guildId, channelId) {
   );
 }
 
+export async function removeAllowedChannel(guildId, channelId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      DELETE FROM allowed_channels
+      WHERE guild_id = $1 AND channel_id = $2
+    `,
+    [guildId, channelId]
+  );
+}
+
 export async function getAllowedChannels(guildId) {
   if (!pool) {
     throw new Error("DATABASE_URL is not configured");
@@ -150,4 +164,51 @@ export async function getAllowedChannels(guildId) {
   );
 
   return result.rows.map((row) => row.channel_id);
+}
+
+export async function addAllowedBot(guildId, botId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      INSERT INTO allowed_bots (guild_id, bot_id)
+      VALUES ($1, $2)
+      ON CONFLICT (guild_id, bot_id) DO NOTHING
+    `,
+    [guildId, botId]
+  );
+}
+
+export async function removeAllowedBot(guildId, botId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      DELETE FROM allowed_bots
+      WHERE guild_id = $1 AND bot_id = $2
+    `,
+    [guildId, botId]
+  );
+}
+
+export async function getAllowedBots(guildId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  const result = await pool.query(
+    `
+      SELECT bot_id
+      FROM allowed_bots
+      WHERE guild_id = $1
+      ORDER BY bot_id
+    `,
+    [guildId]
+  );
+
+  return result.rows.map((row) => row.bot_id);
 }
