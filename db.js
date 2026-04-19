@@ -306,3 +306,52 @@ export async function getBlockedKeywords(guildId) {
 
   return result.rows.map((row) => row.keyword);
 }
+
+export async function setAuditChannel(guildId, channelId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      INSERT INTO guild_settings (guild_id, audit_channel_id, updated_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (guild_id)
+      DO UPDATE SET audit_channel_id = EXCLUDED.audit_channel_id, updated_at = NOW()
+    `,
+    [guildId, channelId]
+  );
+}
+
+export async function clearAuditChannel(guildId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      UPDATE guild_settings
+      SET audit_channel_id = NULL, updated_at = NOW()
+      WHERE guild_id = $1
+    `,
+    [guildId]
+  );
+}
+
+export async function getAuditChannel(guildId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  const result = await pool.query(
+    `
+      SELECT audit_channel_id
+      FROM guild_settings
+      WHERE guild_id = $1
+      LIMIT 1
+    `,
+    [guildId]
+  );
+
+  return result.rows[0]?.audit_channel_id ?? null;
+}

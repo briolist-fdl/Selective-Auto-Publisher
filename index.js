@@ -7,6 +7,7 @@ import {
 } from "discord.js";
 import rawConfig from "./config.json" with { type: "json" };
 import {
+  pool,
   testDbConnection,
   initDb,
   setGuildMode,
@@ -22,7 +23,10 @@ import {
   getKeywordsAny,
   addBlockedKeyword,
   removeBlockedKeyword,
-  getBlockedKeywords
+  getBlockedKeywords,
+  setAuditChannel,
+  clearAuditChannel,
+  getAuditChannel
 } from "./db.js";
 
 const envToken = process.env.BOT_TOKEN;
@@ -107,9 +111,37 @@ async function matchesKeywords(message) {
   return keywords.some((keyword) => keyword && content.includes(keyword));
 }
 
-client.once("clientReady", () => {
-  console.log("Logged in as " + client.user.tag);
-});
+async function sendAuditLog(message, result, reason) {
+  const guildId = message.guild.id;
+
+  const settings = await pool.query(
+    `
+      SELECT audit_channel_id
+      FROM guild_settings
+      WHERE guild_id = $1
+      LIMIT 1
+    `,
+    [guildId]
+  );
+
+  const auditChannelId = settings.rows[0]?.audit_channel_id;
+
+  if (!auditChannelId) return;
+
+  const channel = await client.channels.fetch(auditChannelId).catch(() => null);
+  if (!channel) return;
+
+  const contentPreview = (message.content ?? "").slice(0, 200) || "(no content)";
+
+  await channel.send(
+    `**${result.toUpperCase()}**\n` +
+    `Author: ${message.author.tag} (${message.author.bot ? "bot" : "user"})\n` +
+    `Channel: <#${message.channelId}>\n` +
+    `Message ID: ${message.id}\n` +
+    `Reason: ${reason}\n` +
+    `Content: ${contentPreview}`
+  );
+}
 
 client.on("messageCreate", async (message) => {
   try {
@@ -124,25 +156,46 @@ client.on("messageCreate", async (message) => {
   type: message.type,
   content: message.content
 });
-    if (!(await isAllowedChannel(message))) return;
-    if (isAlreadyPublished(message)) return;
-    if (!(await matchesMode(message))) return;
-    if (!(await matchesKeywords(message))) return;
+    if (!(await isAllowedChannel(message))) {
+  await sendAuditLog(message, "skipped", "channel not allowed");
+  return;
+}
+    if (isAlreadyPublished(message)) {
+  await sendAuditLog(message, "skipped", "already published");
+  return;
+}
+    if (!(await matchesMode(message))) {
+  await sendAuditLog(message, "skipped", "mode mismatch");
+  return;
+}
+    if (!(await matchesKeywords(message))) {
+  await sendAuditLog(message, "skipped", "keyword mismatch");
+  return;
+}
 
     console.log("MATCHED:", message.author.tag, message.content);
     
     await message.crosspost();
-    console.log(
-      "Published message " +
-        message.id +
-        " from " +
-        message.author.tag +
-        " in " +
-        message.channelId
-    );
+
+await sendAuditLog(message, "published", "passed all filters");
+
+console.log(
+  "Published message " +
+    message.id +
+    " from " +
+    message.author.tag +
+    " in " +
+    message.channelId
+);
   } catch (error) {
-    console.error("Failed to publish message " + message.id + ":", error);
-  }
+  await sendAuditLog(
+    message,
+    "failed",
+    error instanceof Error ? error.message : String(error)
+  );
+
+  console.error("Failed to publish message " + message.id + ":", error);
+}
 });
 
 client.on("interactionCreate", async (interaction) => {
@@ -359,6 +412,41 @@ const blockedKeywordsText = blockedKeywords.length
       });
       return;
     }
+
+    if (name === "audit-channel-set") {
+  const id = interaction.options.getString("id", true);
+
+  await setAuditChannel(interaction.guildId, id);
+
+  await interaction.reply({
+    content: "Audit channel set to <#" + id + ">.",
+    ephemeral: true
+  });
+  return;
+}
+
+if (name === "audit-channel-clear") {
+  await clearAuditChannel(interaction.guildId);
+
+  await interaction.reply({
+    content: "Audit channel cleared.",
+    ephemeral: true
+  });
+  return;
+}
+
+if (name === "audit-channel-show") {
+  const auditChannelId = await getAuditChannel(interaction.guildId);
+
+  await interaction.reply({
+    content: auditChannelId
+      ? "Audit channel: <#" + auditChannelId + ">"
+      : "No audit channel set.",
+    ephemeral: true
+  });
+  return;
+}
+
   } catch (error) {
     console.error("Interaction error:", error);
   }
