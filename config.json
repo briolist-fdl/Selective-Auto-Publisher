@@ -4,8 +4,9 @@
   "guildId": "327525048246206465",
   "allowedChannelIds": ["DIN_KANAL_ID"],
   "filters": {
-    "mode": "allowed_bots",
-    "allowedBotIds": ["DIN_BOT_ID"],
-    "keywordsAny": []
-  }
+  "mode": "allowed_bots",
+  "allowedBotIds": ["DIN_BOT_ID"],
+  "keywordsAny": [],
+  "blockedKeywords": ["republishing off"]
+}
 }

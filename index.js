@@ -78,20 +78,19 @@ function matchesMode(message) {
 }
 
 function matchesKeywords(message) {
+  const content = normalize(message.content);
+
+  // 🔴 BLOCKED KEYWORDS (ny)
+  const blocked = config.filters.blockedKeywords ?? [];
+  if (blocked.some(keyword => content.includes(keyword))) {
+    return false;
+  }
+
+  // 🟢 EXISTING LOGIC
   const keywords = config.filters.keywordsAny ?? [];
   if (!keywords.length) return true;
 
-  const embedText = message.embeds
-    .map((embed) => {
-      const fields =
-        embed.fields?.map((f) => (f.name ?? "") + " " + (f.value ?? "")).join(" ") ?? "";
-      return (embed.title ?? "") + " " + (embed.description ?? "") + " " + fields;
-    })
-    .join(" ");
-
-  const fullText = normalize((message.content ?? "") + " " + embedText);
-
-  return keywords.some((word) => fullText.includes(normalize(word)));
+  return keywords.some(keyword => content.includes(keyword));
 }
 
 client.once("clientReady", () => {
