@@ -84,3 +84,19 @@ export async function initDb() {
   console.log("DB schema initialized");
   return true;
 }
+
+export async function setGuildMode(guildId, mode) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      INSERT INTO guild_settings (guild_id, mode, updated_at)
+      VALUES ($1, $2, NOW())
+      ON CONFLICT (guild_id)
+      DO UPDATE SET mode = EXCLUDED.mode, updated_at = NOW()
+    `,
+    [guildId, mode]
+  );
+}
