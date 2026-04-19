@@ -6,8 +6,7 @@ import {
   PermissionsBitField
 } from "discord.js";
 import rawConfig from "./config.json" with { type: "json" };
-import { testDbConnection, initDb } from "./db.js";
-import { setGuildMode } from "./db.js";
+import { testDbConnection, initDb, setGuildMode, getGuildMode } from "./db.js";
 
 const envToken = process.env.BOT_TOKEN;
 
@@ -60,8 +59,8 @@ function isAlreadyPublished(message) {
   );
 }
 
-function matchesMode(message) {
-  const mode = config.filters.mode;
+async function matchesMode(message) {
+  const mode = await getGuildMode(message.guildId);
 
   if (mode === "all") return true;
 
@@ -105,7 +104,7 @@ client.on("messageCreate", async (message) => {
     if (message.system) return;
     if (!isAllowedChannel(message)) return;
     if (isAlreadyPublished(message)) return;
-    if (!matchesMode(message)) return;
+    if (!(await matchesMode(message))) return;
     if (!matchesKeywords(message)) return;
 
     console.log("MATCHED:", message.author.tag, message.content);
