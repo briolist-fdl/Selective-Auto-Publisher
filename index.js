@@ -105,6 +105,15 @@ client.on("messageCreate", async (message) => {
   try {
     if (!message.inGuild()) return;
     if (message.system) return;
+    console.log("MESSAGE DEBUG", {
+  channelId: message.channelId,
+  authorTag: message.author?.tag,
+  authorId: message.author?.id,
+  authorBot: message.author?.bot,
+  webhookId: message.webhookId,
+  type: message.type,
+  content: message.content
+});
     if (!(await isAllowedChannel(message))) return;
     if (isAlreadyPublished(message)) return;
     if (!(await matchesMode(message))) return;
