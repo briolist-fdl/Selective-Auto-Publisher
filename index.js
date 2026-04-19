@@ -6,7 +6,7 @@ import {
   PermissionsBitField
 } from "discord.js";
 import rawConfig from "./config.json" with { type: "json" };
-import { testDbConnection } from "./db.js";
+import { testDbConnection, initDb } from "./db.js";
 
 const envToken = process.env.BOT_TOKEN;
 

@@ -32,3 +32,55 @@ export async function testDbConnection() {
     client.release();
   }
 }
+
+export async function initDb() {
+  if (!pool) {
+    console.warn("Skipping DB init because DATABASE_URL is missing.");
+    return false;
+  }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS guild_settings (
+      guild_id TEXT PRIMARY KEY,
+      mode TEXT NOT NULL DEFAULT 'allowed_bots',
+      audit_channel_id TEXT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS allowed_channels (
+      guild_id TEXT NOT NULL,
+      channel_id TEXT NOT NULL,
+      PRIMARY KEY (guild_id, channel_id)
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS allowed_bots (
+      guild_id TEXT NOT NULL,
+      bot_id TEXT NOT NULL,
+      PRIMARY KEY (guild_id, bot_id)
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS keywords_any (
+      guild_id TEXT NOT NULL,
+      keyword TEXT NOT NULL,
+      PRIMARY KEY (guild_id, keyword)
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS blocked_keywords (
+      guild_id TEXT NOT NULL,
+      keyword TEXT NOT NULL,
+      PRIMARY KEY (guild_id, keyword)
+    )
+  `);
+
+  console.log("DB schema initialized");
+  return true;
+}
