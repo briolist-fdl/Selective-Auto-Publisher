@@ -157,90 +157,90 @@ client.on("interactionCreate", async (interaction) => {
     const name = interaction.commandName;
 
     if (name === "status") {
-  const mode = await getGuildMode(interaction.guildId);
-  const allowedChannels = await getAllowedChannels(interaction.guildId);
-  const allowedBots = await getAllowedBots(interaction.guildId);
+      const mode = await getGuildMode(interaction.guildId);
+      const allowedChannels = await getAllowedChannels(interaction.guildId);
+      const allowedBots = await getAllowedBots(interaction.guildId);
 
-  const channelsText = allowedChannels.length
-    ? allowedChannels.map((id) => "<#" + id + ">").join(", ")
-    : "None";
+      const channelsText = allowedChannels.length
+        ? allowedChannels.map((id) => "<#" + id + ">").join(", ")
+        : "None";
 
-  const botsText = allowedBots.length
-    ? allowedBots.join(", ")
-    : "None";
+      const botsText = allowedBots.length
+        ? allowedBots.join(", ")
+        : "None";
 
-  const keywordsText = (config.filters?.keywordsAny ?? []).length
-    ? config.filters.keywordsAny.join(", ")
-    : "None";
+      const keywordsText = (config.filters?.keywordsAny ?? []).length
+        ? config.filters.keywordsAny.join(", ")
+        : "None";
 
-  const blockedKeywordsText = (config.filters?.blockedKeywords ?? []).length
-    ? config.filters.blockedKeywords.join(", ")
-    : "None";
+      const blockedKeywordsText = (config.filters?.blockedKeywords ?? []).length
+        ? config.filters.blockedKeywords.join(", ")
+        : "None";
 
-  await interaction.reply({
-    content:
-      "**Mode:** " +
-      mode +
-      "\n**Allowed channels:** " +
-      channelsText +
-      "\n**Allowed bots:** " +
-      botsText +
-      "\n**Keywords:** " +
-      keywordsText +
-      "\n**Blocked keywords:** " +
-      blockedKeywordsText,
-    ephemeral: true
-  });
-  return;
-}
+      await interaction.reply({
+        content:
+          "**Mode:** " +
+          mode +
+          "\n**Allowed channels:** " +
+          channelsText +
+          "\n**Allowed bots:** " +
+          botsText +
+          "\n**Keywords:** " +
+          keywordsText +
+          "\n**Blocked keywords:** " +
+          blockedKeywordsText,
+        ephemeral: true
+      });
+      return;
+    }
 
     if (name === "mode") {
-  const value = interaction.options.getString("value", true);
+      const value = interaction.options.getString("value", true);
 
-  await setGuildMode(interaction.guildId, value);
+      await setGuildMode(interaction.guildId, value);
 
-  await interaction.reply({
-    content: "Mode set to " + value + " (saved to DB).",
-    ephemeral: true
-  });
-  return;
-}
+      await interaction.reply({
+        content: "Mode set to " + value + " (saved to DB).",
+        ephemeral: true
+      });
+      return;
+    }
 
     if (name === "bot-add") {
-  const id = interaction.options.getString("id", true);
+      const id = interaction.options.getString("id", true);
 
-  await addAllowedBot(interaction.guildId, id);
+      await addAllowedBot(interaction.guildId, id);
 
-  await interaction.reply({
-    content: "Added bot ID " + id + " (saved to DB).",
-    ephemeral: true
-  });
-  return;
-}
+      await interaction.reply({
+        content: "Added bot ID " + id + " (saved to DB).",
+        ephemeral: true
+      });
+      return;
+    }
 
     if (name === "bot-remove") {
-  const id = interaction.options.getString("id", true);
+      const id = interaction.options.getString("id", true);
 
-  await removeAllowedBot(interaction.guildId, id);
+      await removeAllowedBot(interaction.guildId, id);
 
-  await interaction.reply({
-    content: "Removed bot ID " + id + " (removed from DB).",
-    ephemeral: true
-  });
-  return;
-}
+      await interaction.reply({
+        content: "Removed bot ID " + id + " (removed from DB).",
+        ephemeral: true
+      });
+      return;
+    }
 
     if (name === "bot-list") {
-  const botIds = await getAllowedBots(interaction.guildId);
+      const botIds = await getAllowedBots(interaction.guildId);
 
-  await interaction.reply({
-    content: botIds.length
-      ? botIds.join("\n")
-      : "No allowed bot IDs set.",
-    ephemeral: true
-  });
-  return;
-}
+      await interaction.reply({
+        content: botIds.length
+          ? botIds.join("\n")
+          : "No allowed bot IDs set.",
+        ephemeral: true
+      });
+      return;
+    }
 
     if (name === "keyword-add") {
       const word = interaction.options.getString("word", true).trim();
@@ -323,47 +323,43 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     if (name === "channel-add") {
-  const id = interaction.options.getString("id", true);
+      const id = interaction.options.getString("id", true);
 
-  await addAllowedChannel(interaction.guildId, id);
+      await addAllowedChannel(interaction.guildId, id);
 
-  await interaction.reply({
-    content: "Added channel ID " + id + " (saved to DB).",
-    ephemeral: true
-  });
-  return;
-}
+      await interaction.reply({
+        content: "Added channel ID " + id + " (saved to DB).",
+        ephemeral: true
+      });
+      return;
+    }
 
     if (name === "channel-remove") {
-  const id = interaction.options.getString("id", true);
+      const id = interaction.options.getString("id", true);
 
-  await removeAllowedChannel(interaction.guildId, id);
+      await removeAllowedChannel(interaction.guildId, id);
 
-  await interaction.reply({
-    content: "Removed channel ID " + id + " (removed from DB).",
-    ephemeral: true
-  });
-  return;
-}
+      await interaction.reply({
+        content: "Removed channel ID " + id + " (removed from DB).",
+        ephemeral: true
+      });
+      return;
+    }
 
     if (name === "channel-list") {
-  const allowedChannels = await getAllowedChannels(interaction.guildId);
+      const allowedChannels = await getAllowedChannels(interaction.guildId);
 
-  await interaction.reply({
-    content: allowedChannels.length
-      ? allowedChannels.map((id) => "<#" + id + ">").join("\n")
-      : "No allowed channels set.",
-    ephemeral: true
-  });
-  return;
-}
-
-client.on("error", (error) => {
-  console.error("Client error:", error);
-});
-
-client.on("warn", (info) => {
-  console.warn("Warning:", info);
+      await interaction.reply({
+        content: allowedChannels.length
+          ? allowedChannels.map((id) => "<#" + id + ">").join("\n")
+          : "No allowed channels set.",
+        ephemeral: true
+      });
+      return;
+    }
+  } catch (error) {
+    console.error("Interaction error:", error);
+  }
 });
 
 try {
