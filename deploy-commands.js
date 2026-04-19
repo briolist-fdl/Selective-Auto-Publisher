@@ -3,9 +3,10 @@ import "dotenv/config";
 console.log("Deploying commands...");
 
 import { REST, Routes, SlashCommandBuilder } from "discord.js";
-import config from "./config.json" with { type: "json" };
 
-const token = process.env.BOT_TOKEN || config.token;
+const token = process.env.BOT_TOKEN;
+const clientId = process.env.CLIENT_ID;
+const guildId = process.env.GUILD_ID;
 
 const commands = [
   new SlashCommandBuilder()
@@ -145,7 +146,7 @@ const rest = new REST({ version: "10" }).setToken(token);
 try {
   console.log("Deploying slash commands...");
   await rest.put(
-    Routes.applicationGuildCommands(config.clientId, config.guildId),
+    Routes.applicationGuildCommands(clientId, guildId),
     { body: commands }
   );
   console.log("Slash commands deployed.");

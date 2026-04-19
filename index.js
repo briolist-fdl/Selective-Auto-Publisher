@@ -1,11 +1,9 @@
-import fs from "node:fs";
 import {
   Client,
   GatewayIntentBits,
   MessageFlags,
   PermissionsBitField
 } from "discord.js";
-import rawConfig from "./config.json" with { type: "json" };
 import {
   pool,
   testDbConnection,
@@ -31,12 +29,7 @@ import {
 
 const envToken = process.env.BOT_TOKEN;
 
-const config = {
-  ...rawConfig,
-  token: envToken || rawConfig.token
-};
-
-const CONFIG_PATH = "./config.json";
+const token = process.env.BOT_TOKEN;
 
 console.log("Starting bot...");
 console.log("BOT_TOKEN in env:", "BOT_TOKEN" in process.env);
@@ -52,10 +45,6 @@ const client = new Client({
     GatewayIntentBits.MessageContent
   ]
 });
-
-function saveConfig() {
-  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
-}
 
 function normalize(text) {
   return (text ?? "").toLowerCase().trim();
@@ -464,6 +453,6 @@ try {
   console.error("Database startup failed:", error);
 }
 
-client.login(config.token)
+client.login(token)
   .then(() => console.log("Login success"))
   .catch((err) => console.error("Login failed:", err));
