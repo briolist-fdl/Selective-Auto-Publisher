@@ -38,6 +38,15 @@ const client = new Client({
   ]
 });
 
+const isAdmin = interaction.member.permissions.has('Administrator');
+
+if (!isAdmin) {
+  return interaction.reply({
+    content: 'This command is restricted.',
+    ephemeral: true
+  });
+}
+
 function saveConfig() {
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
 }
@@ -94,7 +103,7 @@ function matchesKeywords(message) {
   return keywords.some((word) => fullText.includes(normalize(word)));
 }
 
-client.once("ready", () => {
+client.once("clientReady", () => {
   console.log("Logged in as " + client.user.tag);
 });
 
