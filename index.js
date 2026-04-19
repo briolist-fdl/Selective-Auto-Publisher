@@ -343,6 +343,12 @@ client.on("warn", (info) => {
   console.warn("Warning:", info);
 });
 
+try {
+  await testDbConnection();
+} catch (error) {
+  console.error("Database connection failed:", error);
+}
+
 client.login(config.token)
   .then(() => console.log("Login success"))
   .catch((err) => console.error("Login failed:", err));
