@@ -212,3 +212,97 @@ export async function getAllowedBots(guildId) {
 
   return result.rows.map((row) => row.bot_id);
 }
+
+export async function addKeywordAny(guildId, keyword) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      INSERT INTO keywords_any (guild_id, keyword)
+      VALUES ($1, $2)
+      ON CONFLICT (guild_id, keyword) DO NOTHING
+    `,
+    [guildId, keyword]
+  );
+}
+
+export async function removeKeywordAny(guildId, keyword) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      DELETE FROM keywords_any
+      WHERE guild_id = $1 AND keyword = $2
+    `,
+    [guildId, keyword]
+  );
+}
+
+export async function getKeywordsAny(guildId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  const result = await pool.query(
+    `
+      SELECT keyword
+      FROM keywords_any
+      WHERE guild_id = $1
+      ORDER BY keyword
+    `,
+    [guildId]
+  );
+
+  return result.rows.map((row) => row.keyword);
+}
+
+export async function addBlockedKeyword(guildId, keyword) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      INSERT INTO blocked_keywords (guild_id, keyword)
+      VALUES ($1, $2)
+      ON CONFLICT (guild_id, keyword) DO NOTHING
+    `,
+    [guildId, keyword]
+  );
+}
+
+export async function removeBlockedKeyword(guildId, keyword) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      DELETE FROM blocked_keywords
+      WHERE guild_id = $1 AND keyword = $2
+    `,
+    [guildId, keyword]
+  );
+}
+
+export async function getBlockedKeywords(guildId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  const result = await pool.query(
+    `
+      SELECT keyword
+      FROM blocked_keywords
+      WHERE guild_id = $1
+      ORDER BY keyword
+    `,
+    [guildId]
+  );
+
+  return result.rows.map((row) => row.keyword);
+}

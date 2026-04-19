@@ -16,7 +16,13 @@ import {
   getAllowedChannels,
   addAllowedBot,
   removeAllowedBot,
-  getAllowedBots
+  getAllowedBots,
+  addKeywordAny,
+  removeKeywordAny,
+  getKeywordsAny,
+  addBlockedKeyword,
+  removeBlockedKeyword,
+  getBlockedKeywords
 } from "./db.js";
 
 const envToken = process.env.BOT_TOKEN;
@@ -86,15 +92,16 @@ async function matchesMode(message) {
   return false;
 }
 
-function matchesKeywords(message) {
+async function matchesKeywords(message) {
   const content = normalize(message.content);
+  const guildId = message.guild.id;
 
-  const blocked = (config.filters?.blockedKeywords ?? []).map(normalize);
+  const blocked = (await getBlockedKeywords(guildId)).map(normalize);
   if (blocked.some((keyword) => keyword && content.includes(keyword))) {
     return false;
   }
 
-  const keywords = (config.filters?.keywordsAny ?? []).map(normalize);
+  const keywords = (await getKeywordsAny(guildId)).map(normalize);
   if (!keywords.length) return true;
 
   return keywords.some((keyword) => keyword && content.includes(keyword));
@@ -120,7 +127,7 @@ client.on("messageCreate", async (message) => {
     if (!(await isAllowedChannel(message))) return;
     if (isAlreadyPublished(message)) return;
     if (!(await matchesMode(message))) return;
-    if (!matchesKeywords(message)) return;
+    if (!(await matchesKeywords(message))) return;
 
     console.log("MATCHED:", message.author.tag, message.content);
     
@@ -169,13 +176,16 @@ client.on("interactionCreate", async (interaction) => {
         ? allowedBots.join(", ")
         : "None";
 
-      const keywordsText = (config.filters?.keywordsAny ?? []).length
-        ? config.filters.keywordsAny.join(", ")
-        : "None";
+      const keywordsAny = await getKeywordsAny(interaction.guildId);
+const blockedKeywords = await getBlockedKeywords(interaction.guildId);
 
-      const blockedKeywordsText = (config.filters?.blockedKeywords ?? []).length
-        ? config.filters.blockedKeywords.join(", ")
-        : "None";
+const keywordsText = keywordsAny.length
+  ? keywordsAny.join(", ")
+  : "None";
+
+const blockedKeywordsText = blockedKeywords.length
+  ? blockedKeywords.join(", ")
+  : "None";
 
       await interaction.reply({
         content:
@@ -243,84 +253,76 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     if (name === "keyword-add") {
-      const word = interaction.options.getString("word", true).trim();
-      if (!config.filters.keywordsAny.includes(word)) {
-        config.filters.keywordsAny.push(word);
-        saveConfig();
-      }
-      await interaction.reply({
-        content: "Added keyword " + word + ".",
-        ephemeral: true
-      });
-      return;
-    }
+  const word = normalize(interaction.options.getString("word", true));
+
+  await addKeywordAny(interaction.guildId, word);
+
+  await interaction.reply({
+    content: "Added keyword " + word + " (saved to DB).",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "keyword-remove") {
-      const word = interaction.options.getString("word", true).trim();
-      config.filters.keywordsAny = config.filters.keywordsAny.filter(
-        (keyword) => keyword !== word
-      );
-      saveConfig();
-      await interaction.reply({
-        content: "Removed keyword " + word + ".",
-        ephemeral: true
-      });
-      return;
-    }
+  const word = normalize(interaction.options.getString("word", true));
+
+  await removeKeywordAny(interaction.guildId, word);
+
+  await interaction.reply({
+    content: "Removed keyword " + word + " (removed from DB).",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "keyword-list") {
-      await interaction.reply({
-        content: config.filters.keywordsAny.length
-          ? config.filters.keywordsAny.join("\n")
-          : "No keywords set.",
-        ephemeral: true
-      });
-      return;
-    }
+  const keywordsAny = await getKeywordsAny(interaction.guildId);
+
+  await interaction.reply({
+    content: keywordsAny.length
+      ? keywordsAny.join("\n")
+      : "No keywords set.",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "blockedkeyword-add") {
-      const word = interaction.options.getString("word", true).trim().toLowerCase();
-      config.filters.blockedKeywords ??= [];
+  const word = normalize(interaction.options.getString("word", true));
 
-      if (!config.filters.blockedKeywords.includes(word)) {
-        config.filters.blockedKeywords.push(word);
-        saveConfig();
-      }
+  await addBlockedKeyword(interaction.guildId, word);
 
-      await interaction.reply({
-        content: "Added blocked keyword " + word + ".",
-        ephemeral: true
-      });
-      return;
-    }
+  await interaction.reply({
+    content: "Added blocked keyword " + word + " (saved to DB).",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "blockedkeyword-remove") {
-      const word = interaction.options.getString("word", true).trim().toLowerCase();
-      config.filters.blockedKeywords ??= [];
+  const word = normalize(interaction.options.getString("word", true));
 
-      config.filters.blockedKeywords = config.filters.blockedKeywords.filter(
-        (keyword) => keyword !== word
-      );
-      saveConfig();
+  await removeBlockedKeyword(interaction.guildId, word);
 
-      await interaction.reply({
-        content: "Removed blocked keyword " + word + ".",
-        ephemeral: true
-      });
-      return;
-    }
+  await interaction.reply({
+    content: "Removed blocked keyword " + word + " (removed from DB).",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "blockedkeyword-list") {
-      config.filters.blockedKeywords ??= [];
+  const blockedKeywords = await getBlockedKeywords(interaction.guildId);
 
-      await interaction.reply({
-        content: config.filters.blockedKeywords.length
-          ? config.filters.blockedKeywords.join("\n")
-          : "No blocked keywords set.",
-        ephemeral: true
-      });
-      return;
-    }
+  await interaction.reply({
+    content: blockedKeywords.length
+      ? blockedKeywords.join("\n")
+      : "No blocked keywords set.",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "channel-add") {
       const id = interaction.options.getString("id", true);
