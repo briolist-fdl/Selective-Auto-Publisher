@@ -100,3 +100,21 @@ export async function setGuildMode(guildId, mode) {
     [guildId, mode]
   );
 }
+
+export async function getGuildMode(guildId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  const result = await pool.query(
+    `
+      SELECT mode
+      FROM guild_settings
+      WHERE guild_id = $1
+      LIMIT 1
+    `,
+    [guildId]
+  );
+
+  return result.rows[0]?.mode ?? "allowed_bots";
+}
