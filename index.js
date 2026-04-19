@@ -301,17 +301,16 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     if (name === "channel-add") {
-      const id = interaction.options.getString("id", true);
-      if (!config.allowedChannelIds.includes(id)) {
-        config.allowedChannelIds.push(id);
-        saveConfig();
-      }
-      await interaction.reply({
-        content: "Added channel ID " + id + ".",
-        ephemeral: true
-      });
-      return;
-    }
+  const id = interaction.options.getString("id", true);
+
+  await addAllowedChannel(interaction.guildId, id);
+
+  await interaction.reply({
+    content: "Added channel ID " + id + " (saved to DB).",
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "channel-remove") {
       const id = interaction.options.getString("id", true);
