@@ -345,8 +345,9 @@ client.on("warn", (info) => {
 
 try {
   await testDbConnection();
+  await initDb();
 } catch (error) {
-  console.error("Database connection failed:", error);
+  console.error("Database startup failed:", error);
 }
 
 client.login(config.token)
