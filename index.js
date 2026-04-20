@@ -50,6 +50,66 @@ function normalize(text) {
   return (text ?? "").toLowerCase().trim();
 }
 
+function buildSearchableContent(message) {
+  const parts = [];
+
+  if (message?.content) {
+    parts.push(message.content);
+  }
+
+  if (Array.isArray(message?.embeds)) {
+    for (const embed of message.embeds) {
+      if (!embed) continue;
+
+      if (embed.title) parts.push(embed.title);
+      if (embed.description) parts.push(embed.description);
+
+      if (Array.isArray(embed.fields)) {
+        for (const field of embed.fields) {
+          if (!field) continue;
+          if (field.name) parts.push(field.name);
+          if (field.value) parts.push(field.value);
+        }
+      }
+    }
+  }
+
+  return normalize(parts.join(" "));
+}
+
+function getCheckedContentTypes(message) {
+  const types = [];
+
+  if (message?.content) {
+    types.push("message.content");
+  }
+
+  if (Array.isArray(message?.embeds) && message.embeds.length > 0) {
+    types.push("embeds[].title");
+    types.push("embeds[].description");
+
+    const hasFields = message.embeds.some(
+      (embed) => Array.isArray(embed?.fields) && embed.fields.length > 0
+    );
+
+    if (hasFields) {
+      types.push("embeds[].fields");
+    }
+  }
+
+  return types;
+}
+
+function getSearchablePreview(message, maxLength = 100) {
+  const combined = buildSearchableContent(message);
+
+  if (!combined) return "(empty)";
+
+  return combined.length > maxLength
+    ? combined.slice(0, maxLength) + "..."
+    : combined;
+}
+
 async function isAllowedChannel(message) {
   const allowedChannels = await getAllowedChannels(message.guildId);
 
@@ -86,7 +146,7 @@ async function matchesMode(message) {
 }
 
 async function matchesKeywords(message) {
-  const content = normalize(message.content);
+  const content = buildSearchableContent(message);
   const guildId = message.guild.id;
 
   const blocked = (await getBlockedKeywords(guildId)).map(normalize);
@@ -120,16 +180,20 @@ async function sendAuditLog(message, result, reason) {
   const channel = await client.channels.fetch(auditChannelId).catch(() => null);
   if (!channel) return;
 
-  const contentPreview = (message.content ?? "").slice(0, 200) || "(no content)";
+  const checkedContentTypes = getCheckedContentTypes(message);
+  const searchablePreview = getSearchablePreview(message, 100);
+  const embedCount = Array.isArray(message?.embeds) ? message.embeds.length : 0;
 
   await channel.send(
-    `**${result.toUpperCase()}**\n` +
-    `Author: ${message.author.tag} (${message.author.bot ? "bot" : "user"})\n` +
-    `Channel: <#${message.channelId}>\n` +
-    `Message ID: ${message.id}\n` +
-    `Reason: ${reason}\n` +
-    `Content: ${contentPreview}`
-  );
+  `**${result.toUpperCase()}**\n` +
+  `Author: ${message.author.tag} (${message.author.bot ? "bot" : "user"})\n` +
+  `Channel: <#${message.channelId}>\n` +
+  `Message ID: ${message.id}\n` +
+  `Reason: ${reason}\n` +
+  `Embed count: ${embedCount}\n` +
+  `Content types checked: ${checkedContentTypes.length ? checkedContentTypes.join(", ") : "(none)"}\n` +
+  `Search preview: ${searchablePreview}`
+);
 }
 
 client.on("messageCreate", async (message) => {
