@@ -102,7 +102,7 @@ const commands = [
 
   new SlashCommandBuilder()
   .setName("channel-filter-add")
-  .setDescription("Add a channel-specific publish filter")
+  .setDescription("Add one or more channel-specific publish filters")
   .addStringOption(option =>
     option
       .setName("channel_id")
@@ -111,20 +111,21 @@ const commands = [
   )
   .addStringOption(option =>
     option
-      .setName("type")
-      .setDescription("Filter type")
-      .setRequired(true)
-      .addChoices(
-        { name: "allowed_keyword", value: "allowed_keyword" },
-        { name: "blocked_keyword", value: "blocked_keyword" },
-        { name: "allowed_bot", value: "allowed_bot" }
-      )
+      .setName("allowed_bot")
+      .setDescription("Allowed bot user ID")
+      .setRequired(false)
   )
   .addStringOption(option =>
     option
-      .setName("value")
-      .setDescription("Keyword or bot ID")
-      .setRequired(true)
+      .setName("allowed_keyword")
+      .setDescription("Keyword required for this channel")
+      .setRequired(false)
+  )
+  .addStringOption(option =>
+    option
+      .setName("blocked_keyword")
+      .setDescription("Keyword blocked for this channel")
+      .setRequired(false)
   ),
 
   new SlashCommandBuilder()

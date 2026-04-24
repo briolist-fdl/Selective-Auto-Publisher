@@ -318,46 +318,94 @@ client.on("interactionCreate", async (interaction) => {
 
     const name = interaction.commandName;
 
-    if (name === "status") {
-      const mode = await getGuildMode(interaction.guildId);
-      const allowedChannels = await getAllowedChannels(interaction.guildId);
-      const allowedBots = await getAllowedBots(interaction.guildId);
+   if (name === "status") {
+  const mode = await getGuildMode(interaction.guildId);
+  const allowedChannels = await getAllowedChannels(interaction.guildId);
+  const allowedBots = await getAllowedBots(interaction.guildId);
+  const keywordsAny = await getKeywordsAny(interaction.guildId);
+  const blockedKeywords = await getBlockedKeywords(interaction.guildId);
+  const auditChannelId = await getAuditChannel(interaction.guildId);
 
-      const channelsText = allowedChannels.length
-        ? allowedChannels.map((id) => "<#" + id + ">").join(", ")
-        : "None";
+  const channelsText = allowedChannels.length
+    ? allowedChannels.map((id) => "<#" + id + ">").join(", ")
+    : "None";
 
-      const botsText = allowedBots.length
-        ? allowedBots.join(", ")
-        : "None";
+  const botsText = allowedBots.length
+    ? allowedBots.join(", ")
+    : "None";
 
-      const keywordsAny = await getKeywordsAny(interaction.guildId);
-const blockedKeywords = await getBlockedKeywords(interaction.guildId);
+  const keywordsText = keywordsAny.length
+    ? keywordsAny.join(", ")
+    : "None";
 
-const keywordsText = keywordsAny.length
-  ? keywordsAny.join(", ")
-  : "None";
+  const blockedKeywordsText = blockedKeywords.length
+    ? blockedKeywords.join(", ")
+    : "None";
 
-const blockedKeywordsText = blockedKeywords.length
-  ? blockedKeywords.join(", ")
-  : "None";
+  const auditText = auditChannelId
+    ? "<#" + auditChannelId + ">"
+    : "None";
 
-      await interaction.reply({
-        content:
-          "**Mode:** " +
-          mode +
-          "\n**Allowed channels:** " +
-          channelsText +
-          "\n**Allowed bots:** " +
-          botsText +
-          "\n**Keywords:** " +
-          keywordsText +
-          "\n**Blocked keywords:** " +
-          blockedKeywordsText,
-        ephemeral: true
-      });
-      return;
+  const channelFilterSections = [];
+
+  for (const channelId of allowedChannels) {
+    const filters = await getChannelPublishFilters(interaction.guildId, channelId);
+
+    if (!filters.length) {
+      channelFilterSections.push(
+        "<#" + channelId + ">:\n" +
+        "- No channel-specific filters set. Uses legacy/global fallback."
+      );
+      continue;
     }
+
+    const allowedBotFilters = filters
+      .filter((filter) => filter.filter_type === "allowed_bot")
+      .map((filter) => filter.value);
+
+    const allowedKeywordFilters = filters
+      .filter((filter) => filter.filter_type === "allowed_keyword")
+      .map((filter) => filter.value);
+
+    const blockedKeywordFilters = filters
+      .filter((filter) => filter.filter_type === "blocked_keyword")
+      .map((filter) => filter.value);
+
+    channelFilterSections.push(
+      "<#" + channelId + ">:\n" +
+      "- Allowed bots: " +
+      (allowedBotFilters.length ? allowedBotFilters.join(", ") : "Any/global fallback") +
+      "\n- Allowed keywords: " +
+      (allowedKeywordFilters.length ? allowedKeywordFilters.join(", ") : "None required") +
+      "\n- Blocked keywords: " +
+      (blockedKeywordFilters.length ? blockedKeywordFilters.join(", ") : "None")
+    );
+  }
+
+  const channelFiltersText = channelFilterSections.length
+    ? channelFilterSections.join("\n\n")
+    : "No allowed channels set.";
+
+  await interaction.reply({
+    content:
+      "**Auto Publisher Status**\n\n" +
+      "**Mode:** " + mode + "\n" +
+      "**Audit channel:** " + auditText + "\n\n" +
+
+      "**Allowed channels:**\n" +
+      channelsText + "\n\n" +
+
+      "**Channel-specific filters:**\n" +
+      channelFiltersText + "\n\n" +
+
+      "**Legacy/global fallback:**\n" +
+      "- Allowed bots: " + botsText + "\n" +
+      "- Allowed keywords: " + keywordsText + "\n" +
+      "- Blocked keywords: " + blockedKeywordsText,
+    ephemeral: true
+  });
+  return;
+}
 
     if (name === "mode") {
       const value = interaction.options.getString("value", true);
@@ -479,20 +527,45 @@ const blockedKeywordsText = blockedKeywords.length
   return;
 }
 
-    if (name === "channel-filter-add") {
+   if (name === "channel-filter-add") {
   const channelId = interaction.options.getString("channel_id", true);
-  const type = interaction.options.getString("type", true);
-  const valueRaw = interaction.options.getString("value", true);
-  const value = type === "allowed_bot" ? valueRaw.trim() : normalize(valueRaw);
 
-  await addChannelPublishFilter(interaction.guildId, channelId, type, value);
+  const allowedBot = interaction.options.getString("allowed_bot");
+  const allowedKeyword = interaction.options.getString("allowed_keyword");
+  const blockedKeyword = interaction.options.getString("blocked_keyword");
+
+  const added = [];
+
+  if (allowedBot) {
+    const value = allowedBot.trim();
+    await addChannelPublishFilter(interaction.guildId, channelId, "allowed_bot", value);
+    added.push("`allowed_bot`: `" + value + "`");
+  }
+
+  if (allowedKeyword) {
+    const value = normalize(allowedKeyword);
+    await addChannelPublishFilter(interaction.guildId, channelId, "allowed_keyword", value);
+    added.push("`allowed_keyword`: `" + value + "`");
+  }
+
+  if (blockedKeyword) {
+    const value = normalize(blockedKeyword);
+    await addChannelPublishFilter(interaction.guildId, channelId, "blocked_keyword", value);
+    added.push("`blocked_keyword`: `" + value + "`");
+  }
+
+  if (!added.length) {
+    await interaction.reply({
+      content: "Please provide at least one filter: allowed_bot, allowed_keyword, or blocked_keyword.",
+      ephemeral: true
+    });
+    return;
+  }
 
   await interaction.reply({
     content:
-      "Added channel filter:\n" +
-      "Channel: <#" + channelId + ">\n" +
-      "Type: `" + type + "`\n" +
-      "Value: `" + value + "`",
+      "Added channel filter(s) for <#" + channelId + ">:\n" +
+      added.join("\n"),
     ephemeral: true
   });
   return;
