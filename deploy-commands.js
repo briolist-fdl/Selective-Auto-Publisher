@@ -101,6 +101,70 @@ const commands = [
     .setDescription("List blocked keywords"),
 
   new SlashCommandBuilder()
+  .setName("channel-filter-add")
+  .setDescription("Add a channel-specific publish filter")
+  .addStringOption(option =>
+    option
+      .setName("channel_id")
+      .setDescription("Channel ID")
+      .setRequired(true)
+  )
+  .addStringOption(option =>
+    option
+      .setName("type")
+      .setDescription("Filter type")
+      .setRequired(true)
+      .addChoices(
+        { name: "allowed_keyword", value: "allowed_keyword" },
+        { name: "blocked_keyword", value: "blocked_keyword" },
+        { name: "allowed_bot", value: "allowed_bot" }
+      )
+  )
+  .addStringOption(option =>
+    option
+      .setName("value")
+      .setDescription("Keyword or bot ID")
+      .setRequired(true)
+  ),
+
+  new SlashCommandBuilder()
+  .setName("channel-filter-remove")
+  .setDescription("Remove a channel-specific publish filter")
+  .addStringOption(option =>
+    option
+      .setName("channel_id")
+      .setDescription("Channel ID")
+      .setRequired(true)
+  )
+  .addStringOption(option =>
+    option
+      .setName("type")
+      .setDescription("Filter type")
+      .setRequired(true)
+      .addChoices(
+        { name: "allowed_keyword", value: "allowed_keyword" },
+        { name: "blocked_keyword", value: "blocked_keyword" },
+        { name: "allowed_bot", value: "allowed_bot" }
+      )
+  )
+  .addStringOption(option =>
+    option
+      .setName("value")
+      .setDescription("Keyword or bot ID")
+      .setRequired(true)
+  ),
+
+  new SlashCommandBuilder()
+  .setName("channel-filter-list")
+  .setDescription("List channel-specific publish filters")
+  .addStringOption(option =>
+    option
+      .setName("channel_id")
+      .setDescription("Channel ID")
+      .setRequired(true)
+  ),
+  
+    new SlashCommandBuilder()
     .setName("channel-add")
     .setDescription("Add an allowed channel")
     .addStringOption(option =>

@@ -479,6 +479,61 @@ const blockedKeywordsText = blockedKeywords.length
   return;
 }
 
+    if (name === "channel-filter-add") {
+  const channelId = interaction.options.getString("channel_id", true);
+  const type = interaction.options.getString("type", true);
+  const valueRaw = interaction.options.getString("value", true);
+  const value = type === "allowed_bot" ? valueRaw.trim() : normalize(valueRaw);
+
+  await addChannelPublishFilter(interaction.guildId, channelId, type, value);
+
+  await interaction.reply({
+    content:
+      "Added channel filter:\n" +
+      "Channel: <#" + channelId + ">\n" +
+      "Type: `" + type + "`\n" +
+      "Value: `" + value + "`",
+    ephemeral: true
+  });
+  return;
+}
+
+if (name === "channel-filter-remove") {
+  const channelId = interaction.options.getString("channel_id", true);
+  const type = interaction.options.getString("type", true);
+  const valueRaw = interaction.options.getString("value", true);
+  const value = type === "allowed_bot" ? valueRaw.trim() : normalize(valueRaw);
+
+  await removeChannelPublishFilter(interaction.guildId, channelId, type, value);
+
+  await interaction.reply({
+    content:
+      "Removed channel filter:\n" +
+      "Channel: <#" + channelId + ">\n" +
+      "Type: `" + type + "`\n" +
+      "Value: `" + value + "`",
+    ephemeral: true
+  });
+  return;
+}
+
+if (name === "channel-filter-list") {
+  const channelId = interaction.options.getString("channel_id", true);
+  const filters = await getChannelPublishFilters(interaction.guildId, channelId);
+
+  const text = filters.length
+    ? filters
+        .map((filter) => "`" + filter.filter_type + "`: `" + filter.value + "`")
+        .join("\n")
+    : "No channel-specific filters set.";
+
+  await interaction.reply({
+    content: "Filters for <#" + channelId + ">:\n" + text,
+    ephemeral: true
+  });
+  return;
+}
+
     if (name === "channel-add") {
       const id = interaction.options.getString("id", true);
 
