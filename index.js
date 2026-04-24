@@ -25,9 +25,9 @@ import {
   setAuditChannel,
   clearAuditChannel,
   getAuditChannel,
-  addChannelKeyword,
-  removeChannelKeyword,
-  getChannelKeywords,
+  addChannelPublishFilter,
+  removeChannelPublishFilter,
+  getChannelPublishFilters
 } from "./db.js";
 
 const envToken = process.env.BOT_TOKEN;
