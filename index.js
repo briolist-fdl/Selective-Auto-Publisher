@@ -24,7 +24,10 @@ import {
   getBlockedKeywords,
   setAuditChannel,
   clearAuditChannel,
-  getAuditChannel
+  getAuditChannel,
+  addChannelKeyword,
+  removeChannelKeyword,
+  getChannelKeywords,
 } from "./db.js";
 
 const envToken = process.env.BOT_TOKEN;
@@ -127,6 +130,19 @@ function isAlreadyPublished(message) {
 
 async function matchesMode(message) {
   const guildId = message.guild.id;
+  const channelId = message.channelId;
+
+  const channelFilters = await getChannelPublishFilters(guildId, channelId);
+
+  const channelAllowedBots = channelFilters
+    .filter((filter) => filter.filter_type === "allowed_bot")
+    .map((filter) => filter.value);
+
+  if (channelAllowedBots.length > 0) {
+    if (!message.author.bot) return false;
+    return channelAllowedBots.includes(message.author.id);
+  }
+
   const mode = await getGuildMode(guildId);
 
   if (mode === "all") return true;
@@ -148,16 +164,47 @@ async function matchesMode(message) {
 async function matchesKeywords(message) {
   const content = buildSearchableContent(message);
   const guildId = message.guild.id;
+  const channelId = message.channelId;
 
-  const blocked = (await getBlockedKeywords(guildId)).map(normalize);
-  if (blocked.some((keyword) => keyword && content.includes(keyword))) {
+  const channelFilters = await getChannelPublishFilters(guildId, channelId);
+
+  const channelBlocked = channelFilters
+    .filter((filter) => filter.filter_type === "blocked_keyword")
+    .map((filter) => normalize(filter.value));
+
+  if (channelBlocked.some((keyword) => keyword && content.includes(keyword))) {
     return false;
   }
 
-  const keywords = (await getKeywordsAny(guildId)).map(normalize);
-  if (!keywords.length) return true;
+  const channelAllowed = channelFilters
+    .filter((filter) => filter.filter_type === "allowed_keyword")
+    .map((filter) => normalize(filter.value));
 
-  return keywords.some((keyword) => keyword && content.includes(keyword));
+  if (channelAllowed.length > 0) {
+    return channelAllowed.some(
+      (keyword) => keyword && content.includes(keyword)
+    );
+  }
+
+  const hasAnyChannelFilter = channelFilters.length > 0;
+
+  if (hasAnyChannelFilter) {
+    return true;
+  }
+
+  const globalBlocked = (await getBlockedKeywords(guildId)).map(normalize);
+
+  if (globalBlocked.some((keyword) => keyword && content.includes(keyword))) {
+    return false;
+  }
+
+  const globalAllowed = (await getKeywordsAny(guildId)).map(normalize);
+
+  if (!globalAllowed.length) return true;
+
+  return globalAllowed.some(
+    (keyword) => keyword && content.includes(keyword)
+  );
 }
 
 async function sendAuditLog(message, result, reason) {

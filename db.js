@@ -81,6 +81,19 @@ export async function initDb() {
     )
   `);
 
+  await pool.query(`
+  CREATE TABLE IF NOT EXISTS channel_publish_filters (
+    guild_id TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    filter_type TEXT NOT NULL CHECK (
+      filter_type IN ('allowed_keyword', 'blocked_keyword', 'allowed_bot')
+    ),
+    value TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (guild_id, channel_id, filter_type, value)
+  )
+`);
+
   console.log("DB schema initialized");
   return true;
 }
@@ -354,4 +367,55 @@ export async function getAuditChannel(guildId) {
   );
 
   return result.rows[0]?.audit_channel_id ?? null;
+}
+
+export async function addChannelPublishFilter(guildId, channelId, filterType, value) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      INSERT INTO channel_publish_filters (guild_id, channel_id, filter_type, value)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (guild_id, channel_id, filter_type, value) DO NOTHING
+    `,
+    [guildId, channelId, filterType, value]
+  );
+}
+
+export async function removeChannelPublishFilter(guildId, channelId, filterType, value) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  await pool.query(
+    `
+      DELETE FROM channel_publish_filters
+      WHERE guild_id = $1
+        AND channel_id = $2
+        AND filter_type = $3
+        AND value = $4
+    `,
+    [guildId, channelId, filterType, value]
+  );
+}
+
+export async function getChannelPublishFilters(guildId, channelId) {
+  if (!pool) {
+    throw new Error("DATABASE_URL is not configured");
+  }
+
+  const result = await pool.query(
+    `
+      SELECT filter_type, value
+      FROM channel_publish_filters
+      WHERE guild_id = $1
+        AND channel_id = $2
+      ORDER BY filter_type, value
+    `,
+    [guildId, channelId]
+  );
+
+  return result.rows;
 }
