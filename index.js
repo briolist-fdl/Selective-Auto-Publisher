@@ -29,6 +29,7 @@ import {
   removeChannelPublishFilter,
   getChannelPublishFilters
 } from "./db.js";
+import { maybeAddSupportMessage } from "./src/shared/supportDevelopment.js";
 
 const envToken = process.env.BOT_TOKEN;
 
@@ -51,6 +52,23 @@ const client = new Client({
 
 function normalize(text) {
   return (text ?? "").toLowerCase().trim();
+}
+
+async function replySuccess(interaction, content) {
+  const contentWithSupport = maybeAddSupportMessage(content);
+
+  if (interaction.replied || interaction.deferred) {
+    await interaction.followUp({
+      flags: MessageFlags.Ephemeral,
+      content: contentWithSupport,
+    });
+    return;
+  }
+
+  await interaction.reply({
+    flags: MessageFlags.Ephemeral,
+    content: contentWithSupport,
+  });
 }
 
 function buildSearchableContent(message) {
@@ -412,10 +430,7 @@ client.on("interactionCreate", async (interaction) => {
 
       await setGuildMode(interaction.guildId, value);
 
-      await interaction.reply({
-        content: "Mode set to " + value + " (saved to DB).",
-        ephemeral: true
-      });
+      await replySuccess(interaction, "Mode set to " + value + " (saved to DB).");
       return;
     }
 
@@ -424,10 +439,7 @@ client.on("interactionCreate", async (interaction) => {
 
       await addAllowedBot(interaction.guildId, id);
 
-      await interaction.reply({
-        content: "Added bot ID " + id + " (saved to DB).",
-        ephemeral: true
-      });
+      await replySuccess(interaction, "Added bot ID " + id + " (saved to DB).");
       return;
     }
 
@@ -436,10 +448,7 @@ client.on("interactionCreate", async (interaction) => {
 
       await removeAllowedBot(interaction.guildId, id);
 
-      await interaction.reply({
-        content: "Removed bot ID " + id + " (removed from DB).",
-        ephemeral: true
-      });
+      await replySuccess(interaction, "Removed bot ID " + id + " (removed from DB).");
       return;
     }
 
@@ -460,10 +469,7 @@ client.on("interactionCreate", async (interaction) => {
 
   await addKeywordAny(interaction.guildId, word);
 
-  await interaction.reply({
-    content: "Added keyword " + word + " (saved to DB).",
-    ephemeral: true
-  });
+  await replySuccess(interaction, "Added keyword " + word + " (saved to DB).");
   return;
 }
 
@@ -472,10 +478,7 @@ client.on("interactionCreate", async (interaction) => {
 
   await removeKeywordAny(interaction.guildId, word);
 
-  await interaction.reply({
-    content: "Removed keyword " + word + " (removed from DB).",
-    ephemeral: true
-  });
+  await replySuccess(interaction, "Removed keyword " + word + " (removed from DB).");
   return;
 }
 
@@ -496,10 +499,7 @@ client.on("interactionCreate", async (interaction) => {
 
   await addBlockedKeyword(interaction.guildId, word);
 
-  await interaction.reply({
-    content: "Added blocked keyword " + word + " (saved to DB).",
-    ephemeral: true
-  });
+  await replySuccess(interaction, "Added blocked keyword " + word + " (saved to DB).");
   return;
 }
 
@@ -508,10 +508,7 @@ client.on("interactionCreate", async (interaction) => {
 
   await removeBlockedKeyword(interaction.guildId, word);
 
-  await interaction.reply({
-    content: "Removed blocked keyword " + word + " (removed from DB).",
-    ephemeral: true
-  });
+  await replySuccess(interaction, "Removed blocked keyword " + word + " (removed from DB).");
   return;
 }
 
@@ -562,12 +559,11 @@ client.on("interactionCreate", async (interaction) => {
     return;
   }
 
-  await interaction.reply({
-    content:
-      "Added channel filter(s) for <#" + channelId + ">:\n" +
-      added.join("\n"),
-    ephemeral: true
-  });
+  await replySuccess(
+    interaction,
+    "Added channel filter(s) for <#" + channelId + ">:\n" +
+      added.join("\n")
+  );
   return;
 }
 
@@ -579,14 +575,13 @@ if (name === "channel-filter-remove") {
 
   await removeChannelPublishFilter(interaction.guildId, channelId, type, value);
 
-  await interaction.reply({
-    content:
-      "Removed channel filter:\n" +
+  await replySuccess(
+    interaction,
+    "Removed channel filter:\n" +
       "Channel: <#" + channelId + ">\n" +
       "Type: `" + type + "`\n" +
-      "Value: `" + value + "`",
-    ephemeral: true
-  });
+      "Value: `" + value + "`"
+  );
   return;
 }
 
@@ -612,10 +607,7 @@ if (name === "channel-filter-list") {
 
       await addAllowedChannel(interaction.guildId, id);
 
-      await interaction.reply({
-        content: "Added channel ID " + id + " (saved to DB).",
-        ephemeral: true
-      });
+      await replySuccess(interaction, "Added channel ID " + id + " (saved to DB).");
       return;
     }
 
@@ -624,10 +616,7 @@ if (name === "channel-filter-list") {
 
       await removeAllowedChannel(interaction.guildId, id);
 
-      await interaction.reply({
-        content: "Removed channel ID " + id + " (removed from DB).",
-        ephemeral: true
-      });
+      await replySuccess(interaction, "Removed channel ID " + id + " (removed from DB).");
       return;
     }
 
@@ -648,20 +637,14 @@ if (name === "channel-filter-list") {
 
   await setAuditChannel(interaction.guildId, id);
 
-  await interaction.reply({
-    content: "Audit channel set to <#" + id + ">.",
-    ephemeral: true
-  });
+  await replySuccess(interaction, "Audit channel set to <#" + id + ">.");
   return;
 }
 
 if (name === "audit-channel-clear") {
   await clearAuditChannel(interaction.guildId);
 
-  await interaction.reply({
-    content: "Audit channel cleared.",
-    ephemeral: true
-  });
+  await replySuccess(interaction, "Audit channel cleared.");
   return;
 }
 
@@ -695,3 +678,4 @@ try {
 client.login(token)
   .then(() => console.log("Login success"))
   .catch((err) => console.error("Login failed:", err));
+  
