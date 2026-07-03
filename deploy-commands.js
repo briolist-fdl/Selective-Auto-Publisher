@@ -208,16 +208,47 @@ new SlashCommandBuilder()
 
 const rest = new REST({ version: "10" }).setToken(token);
 
-try {
-  console.log("Deploying slash commands...");
-  await rest.put(
-    Routes.applicationGuildCommands(clientId, guildId),
-    { body: commands }
+const deployGlobalCommands =
+  String(process.env.DEPLOY_GLOBAL_COMMANDS || "").toLowerCase() === "true";
+
+async function deployCommands() {
+  console.log("Deploying Selective Auto Publisher slash commands...");
+  console.log("Client ID:", clientId);
+  console.log("Guild ID:", guildId || "(none)");
+  console.log("Deploy global:", deployGlobalCommands);
+
+  if (!token) {
+    throw new Error("Missing BOT_TOKEN");
+  }
+
+  if (!clientId) {
+    throw new Error("Missing CLIENT_ID");
+  }
+
+  if (!deployGlobalCommands && !guildId) {
+    throw new Error(
+      "Missing GUILD_ID for guild deploy. Set DEPLOY_GLOBAL_COMMANDS=true to deploy globally."
+    );
+  }
+
+  const route = deployGlobalCommands
+    ? Routes.applicationCommands(clientId)
+    : Routes.applicationGuildCommands(clientId, guildId);
+
+  console.log(
+    deployGlobalCommands
+      ? "Deploying Selective Auto Publisher commands globally."
+      : `Deploying Selective Auto Publisher commands to guild ${guildId}.`
   );
-  console.log("Slash commands deployed.");
-} catch (error) {
-  console.error(error);
+
+  await rest.put(route, {
+    body: commands,
+  });
+
+  console.log("Selective Auto Publisher slash commands deployed.");
 }
 
-console.log("Token exists:", Boolean(token));
-console.log("Done!");
+deployCommands().catch((error) => {
+  console.error("Failed to deploy Selective Auto Publisher slash commands:", error);
+  process.exit(1);
+});
