@@ -121,11 +121,14 @@ SAP is configured through environment variables.
 BOT_TOKEN=
 CLIENT_ID=
 GUILD_ID=
+DEPLOY_GLOBAL_COMMANDS=
 DATABASE_URL=
 
 BOT_ID=sap
 SUPPORT_MESSAGES_ENABLED=true
 ```
+
+`DEPLOY_GLOBAL_COMMANDS=true` is only needed when deploying slash commands globally for public bot usage.
 
 Optional support-message override:
 
@@ -139,19 +142,35 @@ SUPPORT_MESSAGE_CHANCE=
 
 Install dependencies:
 
-```bash id="qyujbn"
+```bash
 npm install
 ```
 
-Deploy slash commands:
+Deploy slash commands to the configured development/test guild:
 
-```bash id="coq5tq"
+```bash
 npm run deploy
 ```
 
+Deploy slash commands globally for public bot usage:
+
+```bash
+DEPLOY_GLOBAL_COMMANDS=true npm run deploy
+```
+
+On Windows PowerShell:
+
+```powershell
+$env:DEPLOY_GLOBAL_COMMANDS="true"
+npm run deploy
+Remove-Item Env:\DEPLOY_GLOBAL_COMMANDS
+```
+
+Guild deploy is useful for testing because commands update quickly. Global deploy is needed when the bot is installed in other servers.
+
 Start the bot:
 
-```bash id="gwg11i"
+```bash
 npm start
 ```
 

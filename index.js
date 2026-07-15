@@ -156,27 +156,134 @@ async function matchesMode(message) {
     .filter((filter) => filter.filter_type === "allowed_bot")
     .map((filter) => filter.value);
 
+  // Channel-specific allowed bots filter
   if (channelAllowedBots.length > 0) {
-    if (!message.author.bot) return false;
-    return channelAllowedBots.includes(message.author.id);
+    const isMatch = message.author.bot && channelAllowedBots.includes(message.author.id);
+    
+    if (isMatch) {
+      return {
+        ok: true,
+        reason: "matched",
+        stage: "mode",
+        filterSource: "channel-specific",
+        details: {}
+      };
+    } else {
+      return {
+        ok: false,
+        reason: "mode_mismatch",
+        stage: "mode",
+        filterSource: "channel-specific",
+        details: {
+          authorId: message.author.id,
+          authorName: message.author.tag,
+          authorIsBot: message.author.bot,
+          webhookId: message.webhookId || "none",
+          configuredAllowedBots: channelAllowedBots
+        }
+      };
+    }
   }
 
+  // Global fallback filters
   const mode = await getGuildMode(guildId);
 
-  if (mode === "all") return true;
+  if (mode === "all") {
+    return {
+      ok: true,
+      reason: "matched",
+      stage: "mode",
+      filterSource: "global fallback",
+      details: {}
+    };
+  }
 
   if (mode === "only_bots") {
-    return message.author.bot === true;
+    const isMatch = message.author.bot === true;
+    
+    if (isMatch) {
+      return {
+        ok: true,
+        reason: "matched",
+        stage: "mode",
+        filterSource: "global fallback",
+        details: {}
+      };
+    } else {
+      return {
+        ok: false,
+        reason: "mode_mismatch",
+        stage: "mode",
+        filterSource: "global fallback",
+        details: {
+          authorId: message.author.id,
+          authorName: message.author.tag,
+          authorIsBot: message.author.bot,
+          webhookId: message.webhookId || "none",
+          configuredMode: mode
+        }
+      };
+    }
   }
 
   if (mode === "allowed_bots") {
-    if (!message.author.bot) return false;
+    if (!message.author.bot) {
+      return {
+        ok: false,
+        reason: "mode_mismatch",
+        stage: "mode",
+        filterSource: "global fallback",
+        details: {
+          authorId: message.author.id,
+          authorName: message.author.tag,
+          authorIsBot: message.author.bot,
+          webhookId: message.webhookId || "none",
+          configuredMode: mode
+        }
+      };
+    }
 
     const allowedBots = await getAllowedBots(guildId);
-    return allowedBots.includes(message.author.id);
+    const isMatch = allowedBots.includes(message.author.id);
+    
+    if (isMatch) {
+      return {
+        ok: true,
+        reason: "matched",
+        stage: "mode",
+        filterSource: "global fallback",
+        details: {}
+      };
+    } else {
+      return {
+        ok: false,
+        reason: "mode_mismatch",
+        stage: "mode",
+        filterSource: "global fallback",
+        details: {
+          authorId: message.author.id,
+          authorName: message.author.tag,
+          authorIsBot: message.author.bot,
+          webhookId: message.webhookId || "none",
+          configuredAllowedBots: allowedBots
+        }
+      };
+    }
   }
 
-  return false;
+  return {
+    ok: false,
+    reason: "mode_mismatch",
+    stage: "mode",
+    filterSource: "global fallback",
+    details: {
+      authorId: message.author.id,
+      authorName: message.author.tag,
+      authorIsBot: message.author.bot,
+      webhookId: message.webhookId || "none",
+      configuredMode: mode
+    }
+  };
 }
 
 async function matchesKeywords(message) {
@@ -190,42 +297,120 @@ async function matchesKeywords(message) {
     .filter((filter) => filter.filter_type === "blocked_keyword")
     .map((filter) => normalize(filter.value));
 
-  if (channelBlocked.some((keyword) => keyword && content.includes(keyword))) {
-    return false;
+  // Check channel-specific blocked keywords
+  const matchedBlockedKeyword = channelBlocked.find((keyword) => keyword && content.includes(keyword));
+  if (matchedBlockedKeyword) {
+    return {
+      ok: false,
+      reason: "blocked_keyword",
+      stage: "keywords",
+      filterSource: "channel-specific",
+      details: {
+        matchedBlockedKeyword,
+        configuredBlockedKeywords: channelBlocked
+      }
+    };
   }
 
   const channelAllowed = channelFilters
     .filter((filter) => filter.filter_type === "allowed_keyword")
     .map((filter) => normalize(filter.value));
 
+  // Channel has allowed keywords filter
   if (channelAllowed.length > 0) {
-    return channelAllowed.some(
+    const matchedAllowed = channelAllowed.some(
       (keyword) => keyword && content.includes(keyword)
     );
+    
+    if (matchedAllowed) {
+      return {
+        ok: true,
+        reason: "matched",
+        stage: "keywords",
+        filterSource: "channel-specific",
+        details: {}
+      };
+    } else {
+      return {
+        ok: false,
+        reason: "missing_allowed_keyword",
+        stage: "keywords",
+        filterSource: "channel-specific",
+        details: {
+          configuredAllowedKeywords: channelAllowed
+        }
+      };
+    }
   }
 
   const hasAnyChannelFilter = channelFilters.length > 0;
 
+  // Channel has some filter (blocked or allowed bots), so allowed keywords pass
   if (hasAnyChannelFilter) {
-    return true;
+    return {
+      ok: true,
+      reason: "matched",
+      stage: "keywords",
+      filterSource: "channel-specific",
+      details: {}
+    };
   }
 
+  // No channel-specific filters; use global fallback
   const globalBlocked = (await getBlockedKeywords(guildId)).map(normalize);
 
-  if (globalBlocked.some((keyword) => keyword && content.includes(keyword))) {
-    return false;
+  const matchedGlobalBlocked = globalBlocked.find((keyword) => keyword && content.includes(keyword));
+  if (matchedGlobalBlocked) {
+    return {
+      ok: false,
+      reason: "blocked_keyword",
+      stage: "keywords",
+      filterSource: "global fallback",
+      details: {
+        matchedBlockedKeyword: matchedGlobalBlocked,
+        configuredBlockedKeywords: globalBlocked
+      }
+    };
   }
 
   const globalAllowed = (await getKeywordsAny(guildId)).map(normalize);
 
-  if (!globalAllowed.length) return true;
+  if (!globalAllowed.length) {
+    return {
+      ok: true,
+      reason: "matched",
+      stage: "keywords",
+      filterSource: "global fallback",
+      details: {}
+    };
+  }
 
-  return globalAllowed.some(
+  const matchedAllowed = globalAllowed.some(
     (keyword) => keyword && content.includes(keyword)
   );
+  
+  if (matchedAllowed) {
+    return {
+      ok: true,
+      reason: "matched",
+      stage: "keywords",
+      filterSource: "global fallback",
+      details: {}
+    };
+  } else {
+    return {
+      ok: false,
+      reason: "missing_allowed_keyword",
+      stage: "keywords",
+      filterSource: "global fallback",
+      details: {
+        configuredAllowedKeywords: globalAllowed
+      }
+    };
+  }
 }
 
-async function sendAuditLog(message, result, reason) {
+async function sendAuditLog(message, eventType, filterResult) {
   const guildId = message.guild.id;
 
   const settings = await pool.query(
@@ -249,16 +434,68 @@ async function sendAuditLog(message, result, reason) {
   const searchablePreview = getSearchablePreview(message, 100);
   const embedCount = Array.isArray(message?.embeds) ? message.embeds.length : 0;
 
-  await channel.send(
-  `**${result.toUpperCase()}**\n` +
-  `Author: ${message.author.tag} (${message.author.bot ? "bot" : "user"})\n` +
-  `Channel: <#${message.channelId}>\n` +
-  `Message ID: ${message.id}\n` +
-  `Reason: ${reason}\n` +
-  `Embed count: ${embedCount}\n` +
-  `Content types checked: ${checkedContentTypes.length ? checkedContentTypes.join(", ") : "(none)"}\n` +
-  `Search preview: ${searchablePreview}`
-);
+  const baseInfo = [
+    `**${eventType.toUpperCase()}**`,
+    `Author: ${message.author.tag} (ID: ${message.author.id}, ${message.author.bot ? "bot" : "user"})`,
+    `Channel: <#${message.channelId}>`,
+    `Message ID: ${message.id}`,
+    `Webhook ID: ${message.webhookId || "none"}`,
+    `Embed count: ${embedCount}`,
+    `Content types checked: ${checkedContentTypes.length ? checkedContentTypes.join(", ") : "(none)"}`,
+    `Search preview: ${searchablePreview}`
+  ];
+
+  let detailsInfo = [];
+
+  if (filterResult) {
+    baseInfo.push(`Filter source: ${filterResult.filterSource}`);
+    
+    if (eventType === "published") {
+      detailsInfo.push(`Reason: ${filterResult.reason}`);
+    } else if (eventType === "skipped") {
+      detailsInfo.push(`Reason: ${filterResult.reason}`);
+      
+      if (filterResult.reason === "mode_mismatch" && filterResult.details) {
+        if (filterResult.details.configuredAllowedBots) {
+          detailsInfo.push(
+            `Configured allowed bots: ${filterResult.details.configuredAllowedBots.length ? filterResult.details.configuredAllowedBots.join(", ") : "(none)"}`
+          );
+        }
+        if (filterResult.details.configuredMode) {
+          detailsInfo.push(`Configured mode: ${filterResult.details.configuredMode}`);
+        }
+      }
+      
+      if (filterResult.reason === "blocked_keyword" && filterResult.details) {
+        detailsInfo.push(`Matched blocked keyword: ${filterResult.details.matchedBlockedKeyword}`);
+        if (filterResult.details.configuredBlockedKeywords) {
+          detailsInfo.push(
+            `Configured blocked keywords: ${filterResult.details.configuredBlockedKeywords.join(", ")}`
+          );
+        }
+      }
+      
+      if (filterResult.reason === "missing_allowed_keyword" && filterResult.details) {
+        if (filterResult.details.configuredAllowedKeywords) {
+          detailsInfo.push(
+            `Required keywords: ${filterResult.details.configuredAllowedKeywords.join(", ")}`
+          );
+        }
+      }
+    } else if (eventType === "failed") {
+      detailsInfo.push(`Reason: ${filterResult.reason}`);
+      if (filterResult.details?.error) {
+        detailsInfo.push(`Error: ${filterResult.details.error}`);
+      }
+    }
+  } else if (eventType === "skipped") {
+    // For skipped events without a filterResult (e.g., already published)
+    detailsInfo.push("Reason: already published");
+  }
+
+  const fullMessage = baseInfo.concat(detailsInfo).join("\n");
+  
+  await channel.send(fullMessage);
 }
 
 client.on("messageCreate", async (message) => {
@@ -276,46 +513,63 @@ client.on("messageCreate", async (message) => {
       type: message.type,
       content: message.content
     });
+
+    // Only process messages from allowed channels
     if (!(await isAllowedChannel(message))) {
-  await sendAuditLog(message, "skipped", "channel not allowed");
-  return;
-}
+      return;
+    }
+
+    // Check if already published
     if (isAlreadyPublished(message)) {
-  await sendAuditLog(message, "skipped", "already published");
-  return;
-}
-    if (!(await matchesMode(message))) {
-  await sendAuditLog(message, "skipped", "mode mismatch");
-  return;
-}
-    if (!(await matchesKeywords(message))) {
-  await sendAuditLog(message, "skipped", "keyword mismatch");
-  return;
-}
+      await sendAuditLog(message, "skipped", null);
+      return;
+    }
+
+    // Check mode filter
+    const modeResult = await matchesMode(message);
+    if (!modeResult.ok) {
+      await sendAuditLog(message, "skipped", modeResult);
+      return;
+    }
+
+    // Check keyword filter
+    const keywordResult = await matchesKeywords(message);
+    if (!keywordResult.ok) {
+      await sendAuditLog(message, "skipped", keywordResult);
+      return;
+    }
 
     console.log("MATCHED:", message.author.tag, message.content);
     
     await message.crosspost();
 
-await sendAuditLog(message, "published", "passed all filters");
+    await sendAuditLog(message, "published", modeResult);
 
-console.log(
-  "Published message " +
-    message.id +
-    " from " +
-    message.author.tag +
-    " in " +
-    message.channelId
-);
+    console.log(
+      "Published message " +
+        message.id +
+        " from " +
+        message.author.tag +
+        " in " +
+        message.channelId
+    );
   } catch (error) {
-  await sendAuditLog(
-    message,
-    "failed",
-    error instanceof Error ? error.message : String(error)
-  );
-
-  console.error("Failed to publish message " + message.id + ":", error);
-}
+    console.error("Failed to publish message " + message.id + ":", error);
+    
+    // Only log errors for allowed channels
+    if (await isAllowedChannel(message)) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // For errors, pass a structured error result
+      await sendAuditLog(message, "failed", {
+        ok: false,
+        reason: "publication_error",
+        filterSource: "system",
+        details: {
+          error: errorMessage
+        }
+      });
+    }
+  }
 });
 
 client.on("interactionCreate", async (interaction) => {
