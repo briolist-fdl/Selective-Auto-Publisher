@@ -17,9 +17,23 @@ It is built for servers that need more control over which bot-generated messages
 * PostgreSQL-backed configuration storage
 * Ephemeral admin responses for configuration commands
 
+## Publishing rules
+
+SAP is a general-purpose publisher. It has no built-in game, source-bot, feed, or opt-out phrase rules. Each server chooses which channels and authors are eligible; it can enable any combination of channels or none.
+
+After channel and author/mode checks, blocked keywords take precedence over allowed keywords. Server-wide blocked keywords apply to every allowed channel, including channels with their own filters. Channel-specific blocked keywords add restrictions for that channel only. A match in either list prevents publishing and is reported as `blocked_keyword` in the audit. Existing mode rejections remain `mode_mismatch`.
+
+Matching is case-insensitive substring matching against message text and supported embed text (titles, descriptions, field names and values). No phrase is reserved: configure any source's opt-out text as a blocked keyword wherever that convention should apply. Without that configuration, SAP gives the phrase no special meaning. Administrators are responsible for selecting rules appropriate to their sources and consent requirements.
+
+Channel-specific allowed keywords take precedence over server-wide allowed keywords. As before, a channel with any channel-specific filter but no allowed keywords does not require a server-wide allowed-keyword match. Server-wide blocked keywords still apply.
+
+Compatibility note: server-wide blocked keywords previously acted only as a fallback. Review those existing settings before deploying this revision: they now also restrict channels with custom filters. Use channel-specific blocked keywords for restrictions that should apply to only one channel.
+
 ## Commands
 
-SAP uses multiple slash commands.
+SAP uses multiple slash commands. All commands are for server use and require Manage Server (or Administrator). Registration sets Manage Server as the default permission; the bot also checks permissions at runtime, even if command visibility is overridden in Discord. Global commands are restricted to server installations and server contexts, not direct messages or personal installations.
+
+Changes to command registration take effect only after running the deployment script for the intended scope. Restarting the bot alone does not update command visibility.
 
 ### Status
 
@@ -93,7 +107,9 @@ blocked_keyword
 /channel-list
 ```
 
-Controls which channels SAP is allowed to process.
+Controls which channels SAP is allowed to process. Adding a source channel or adding channel-specific filters requires an announcement channel in the current server. SAP checks its effective View Channel, Send Messages, and Manage Messages permissions before saving. Administrator is not required. These checks do not activate a channel when only filters are added. Existing entries can still be removed if the channel is deleted or access is lost.
+
+Validation checks the permissions at configuration time. Later permission changes can still prevent publication; existing stored entries are not automatically migrated or removed.
 
 ### Audit channel
 

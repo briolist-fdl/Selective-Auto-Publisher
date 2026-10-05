@@ -1,5 +1,6 @@
 import {
   Client,
+  ChannelType,
   GatewayIntentBits,
   MessageFlags,
   PermissionsBitField
@@ -52,6 +53,29 @@ const client = new Client({
 
 function normalize(text) {
   return (text ?? "").toLowerCase().trim();
+}
+
+async function validateSourceChannel(interaction, channelId) {
+  const channel = await interaction.guild?.channels.fetch(channelId).catch(() => null);
+  let problem;
+  if (!channel || channel.guildId !== interaction.guildId || channel.type !== ChannelType.GuildAnnouncement) {
+    problem = "Choose an announcement channel in this server that the bot can access.";
+  } else {
+    const permissions = channel.permissionsFor(client.user);
+    const required = [
+      PermissionsBitField.Flags.ViewChannel,
+      PermissionsBitField.Flags.SendMessages,
+      PermissionsBitField.Flags.ManageMessages
+    ];
+    if (!permissions?.has(required)) {
+      problem = "I need View Channel, Send Messages, and Manage Messages in that announcement channel.";
+    }
+  }
+  if (problem) {
+    await interaction.reply({ content: problem, ephemeral: true });
+    return false;
+  }
+  return true;
 }
 
 async function replySuccess(interaction, content) {
@@ -288,6 +312,7 @@ async function matchesMode(message) {
 
 async function matchesKeywords(message) {
   const content = buildSearchableContent(message);
+
   const guildId = message.guild.id;
   const channelId = message.channelId;
 
@@ -308,6 +333,23 @@ async function matchesKeywords(message) {
       details: {
         matchedBlockedKeyword,
         configuredBlockedKeywords: channelBlocked
+      }
+    };
+  }
+
+  // Server-wide blocked words apply even when the channel has its own filters.
+  const globalBlocked = (await getBlockedKeywords(guildId)).map(normalize);
+
+  const matchedGlobalBlocked = globalBlocked.find((keyword) => keyword && content.includes(keyword));
+  if (matchedGlobalBlocked) {
+    return {
+      ok: false,
+      reason: "blocked_keyword",
+      stage: "keywords",
+      filterSource: "server-wide",
+      details: {
+        matchedBlockedKeyword: matchedGlobalBlocked,
+        configuredBlockedKeywords: globalBlocked
       }
     };
   }
@@ -356,23 +398,6 @@ async function matchesKeywords(message) {
     };
   }
 
-  // No channel-specific filters; use global fallback
-  const globalBlocked = (await getBlockedKeywords(guildId)).map(normalize);
-
-  const matchedGlobalBlocked = globalBlocked.find((keyword) => keyword && content.includes(keyword));
-  if (matchedGlobalBlocked) {
-    return {
-      ok: false,
-      reason: "blocked_keyword",
-      stage: "keywords",
-      filterSource: "global fallback",
-      details: {
-        matchedBlockedKeyword: matchedGlobalBlocked,
-        configuredBlockedKeywords: globalBlocked
-      }
-    };
-  }
-
   const globalAllowed = (await getKeywordsAny(guildId)).map(normalize);
 
   if (!globalAllowed.length) {
@@ -411,6 +436,7 @@ async function matchesKeywords(message) {
 }
 
 async function sendAuditLog(message, eventType, filterResult) {
+  try {
   const guildId = message.guild.id;
 
   const settings = await pool.query(
@@ -428,7 +454,7 @@ async function sendAuditLog(message, eventType, filterResult) {
   if (!auditChannelId) return;
 
   const channel = await client.channels.fetch(auditChannelId).catch(() => null);
-  if (!channel) return;
+  if (!channel || channel.guildId !== guildId || !channel.isTextBased() || typeof channel.send !== "function") return;
 
   const checkedContentTypes = getCheckedContentTypes(message);
   const searchablePreview = getSearchablePreview(message, 100);
@@ -495,7 +521,11 @@ async function sendAuditLog(message, eventType, filterResult) {
 
   const fullMessage = baseInfo.concat(detailsInfo).join("\n");
   
-  await channel.send(fullMessage);
+  await channel.send({ content: fullMessage, allowedMentions: { parse: [] } });
+  } catch {
+    // Discord errors may contain the request payload, including audit previews.
+    console.error("Audit delivery failed.");
+  }
 }
 
 client.on("messageCreate", async (message) => {
@@ -503,16 +533,6 @@ client.on("messageCreate", async (message) => {
     if (!message.inGuild()) return;
     if (message.author.id === client.user.id) return;
     if (message.system) return;
-
-    console.log("MESSAGE DEBUG", {
-      channelId: message.channelId,
-      authorTag: message.author?.tag,
-      authorId: message.author?.id,
-      authorBot: message.author?.bot,
-      webhookId: message.webhookId,
-      type: message.type,
-      content: message.content
-    });
 
     // Only process messages from allowed channels
     if (!(await isAllowedChannel(message))) {
@@ -539,8 +559,7 @@ client.on("messageCreate", async (message) => {
       return;
     }
 
-    console.log("MATCHED:", message.author.tag, message.content);
-    
+
     await message.crosspost();
 
     await sendAuditLog(message, "published", modeResult);
@@ -548,17 +567,15 @@ client.on("messageCreate", async (message) => {
     console.log(
       "Published message " +
         message.id +
-        " from " +
-        message.author.tag +
         " in " +
         message.channelId
     );
   } catch (error) {
-    console.error("Failed to publish message " + message.id + ":", error);
+    console.error("Failed to publish message " + message.id);
     
-    // Only log errors for allowed channels
-    if (await isAllowedChannel(message)) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
+    // A database failure must not escape this event handler.
+    if (message.inGuild() && await isAllowedChannel(message).catch(() => false)) {
+      const errorMessage = "Publication failed. Check bot permissions and service availability.";
       // For errors, pass a structured error result
       await sendAuditLog(message, "failed", {
         ok: false,
@@ -575,6 +592,14 @@ client.on("messageCreate", async (message) => {
 client.on("interactionCreate", async (interaction) => {
   try {
     if (!interaction.isChatInputCommand()) return;
+
+    if (!interaction.guildId || !interaction.guild) {
+      await interaction.reply({
+        content: "Use this command in a server where SAP is installed.",
+        ephemeral: true
+      });
+      return;
+    }
 
     const adminOnly = interaction.memberPermissions?.has(
       PermissionsBitField.Flags.ManageGuild
@@ -626,7 +651,7 @@ client.on("interactionCreate", async (interaction) => {
     if (!filters.length) {
       channelFilterSections.push(
         "<#" + channelId + ">:\n" +
-        "- No channel-specific filters set. Uses legacy/global fallback."
+        "- No channel-specific filters set. Uses server defaults."
       );
       continue;
     }
@@ -670,7 +695,7 @@ client.on("interactionCreate", async (interaction) => {
       "**Channel-specific filters:**\n" +
       channelFiltersText + "\n\n" +
 
-      "**Legacy/global fallback:**\n" +
+      "**Server defaults (blocked keywords always apply):**\n" +
       "- Allowed bots: " + botsText + "\n" +
       "- Allowed keywords: " + keywordsText + "\n" +
       "- Blocked keywords: " + blockedKeywordsText,
@@ -780,6 +805,7 @@ client.on("interactionCreate", async (interaction) => {
 
    if (name === "channel-filter-add") {
   const channelId = interaction.options.getString("channel_id", true);
+  if (!(await validateSourceChannel(interaction, channelId))) return;
 
   const allowedBot = interaction.options.getString("allowed_bot");
   const allowedKeyword = interaction.options.getString("allowed_keyword");
@@ -859,6 +885,8 @@ if (name === "channel-filter-list") {
     if (name === "channel-add") {
       const id = interaction.options.getString("id", true);
 
+      if (!(await validateSourceChannel(interaction, id))) return;
+
       await addAllowedChannel(interaction.guildId, id);
 
       await replySuccess(interaction, "Added channel ID " + id + " (saved to DB).");
@@ -889,6 +917,15 @@ if (name === "channel-filter-list") {
     if (name === "audit-channel-set") {
   const id = interaction.options.getString("id", true);
 
+  const channel = await interaction.guild?.channels.fetch(id).catch(() => null);
+  if (!channel || channel.guildId !== interaction.guildId || !channel.isTextBased() || typeof channel.send !== "function") {
+    await interaction.reply({
+      content: "Choose a text channel in this server that the bot can access.",
+      ephemeral: true
+    });
+    return;
+  }
+
   await setAuditChannel(interaction.guildId, id);
 
   await replySuccess(interaction, "Audit channel set to <#" + id + ">.");
@@ -915,7 +952,7 @@ if (name === "audit-channel-show") {
 }
 
   } catch (error) {
-    console.error("Interaction error:", error);
+    console.error("Interaction failed.");
   }
 });
 
@@ -926,10 +963,10 @@ try {
   await initDb();
   console.log("Finished initDb");
 } catch (error) {
-  console.error("Database startup failed:", error);
+  console.error("Database startup failed.");
 }
 
 client.login(token)
   .then(() => console.log("Login success"))
-  .catch((err) => console.error("Login failed:", err));
+  .catch((err) => console.error("Login failed."));
   

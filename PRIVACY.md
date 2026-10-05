@@ -1,6 +1,6 @@
 # Privacy Policy for Selective Auto Publisher
 
-Effective date: 2026-07-03
+Revision date: 2026-09-29 (applies when this revision is deployed)
 
 Selective Auto Publisher, or SAP, is a Discord bot for selectively publishing messages from announcement channels.
 
@@ -21,7 +21,9 @@ SAP may store configuration data needed to operate the bot, including:
 
 SAP may process message content when checking whether a message should be published or skipped according to the configured rules.
 
-SAP may also send audit messages to a configured audit channel. These audit messages may include decision details such as the source channel, author or bot, message ID, publish/skip reason, matched filters, and a limited content preview.
+SAP may send audit messages only to a configured text channel in the same server as the source message. Audit messages may include author name and ID, source channel and message IDs, webhook ID, embed count, checked content types, configured or matched filters, and the publish/skip reason. A preview contains up to 100 characters of normalized message and embed text, followed by an ellipsis when truncated. Server administrators control who can view this channel. Audit messages do not trigger mentions.
+
+Operational logs do not intentionally include message bodies, embeds, audit previews, or raw error payloads. They may contain message and channel IDs, publication outcomes, and generic failure notices. Content filtering and audit generation occur only after the source channel is confirmed as allowed. SAP receives server message events according to its Discord access; restrict its channel access to what is needed.
 
 ## Why this data is used
 
@@ -51,6 +53,10 @@ SAP stores configuration data for as long as the bot is configured for a server.
 Server administrators can remove or change stored configuration using the bot commands.
 
 Removing the bot from a server may not automatically delete all stored configuration data from the database.
+
+SAP does not automatically expire audit messages. They remain in Discord until removed by server administrators or other server retention controls. Clearing the audit channel setting stops future audit output; it does not delete earlier audit messages.
+
+Operational log retention is controlled by the hosting provider and operator, not by SAP. A verified retention period has not yet been established for public distribution. Older deployments may have logged message content; this revision does not delete historical logs or backups. These require a separate operator review before public distribution.
 
 ## Data deletion
 

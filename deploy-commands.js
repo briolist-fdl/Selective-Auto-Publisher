@@ -2,7 +2,7 @@ import "dotenv/config";
 
 console.log("Deploying commands...");
 
-import { REST, Routes, SlashCommandBuilder } from "discord.js";
+import { REST, Routes, SlashCommandBuilder, PermissionsBitField, InteractionContextType, ApplicationIntegrationType } from "discord.js";
 
 const token = process.env.BOT_TOKEN;
 const clientId = process.env.CLIENT_ID;
@@ -204,7 +204,11 @@ new SlashCommandBuilder()
   .setName("audit-channel-show")
   .setDescription("Show audit channel"),
 
-].map(command => command.toJSON());
+].map(command => command
+  .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild)
+  .setContexts(InteractionContextType.Guild)
+  .setIntegrationTypes(ApplicationIntegrationType.GuildInstall)
+  .toJSON());
 
 const rest = new REST({ version: "10" }).setToken(token);
 
@@ -242,7 +246,7 @@ async function deployCommands() {
   );
 
   await rest.put(route, {
-    body: commands,
+    body: deployGlobalCommands ? commands : commands.map(({ contexts, integration_types, ...command }) => command),
   });
 
   console.log("Selective Auto Publisher slash commands deployed.");
