@@ -601,6 +601,15 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
 
+    if (interaction.commandName === "about") {
+      await interaction.reply({
+        content: "Selective Auto Publisher helps server teams publish matching posts from announcement channels. For help, visit the [Brio Bots support channel](https://discord.com/channels/1550119459891576852/1550120069051187250). You need to be a member of Brio Bots to open the channel.",
+        ephemeral: true,
+        allowedMentions: { parse: [] }
+      });
+      return;
+    }
+
     const adminOnly = interaction.memberPermissions?.has(
       PermissionsBitField.Flags.ManageGuild
     );

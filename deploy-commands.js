@@ -10,6 +10,10 @@ const guildId = process.env.GUILD_ID;
 
 const commands = [
   new SlashCommandBuilder()
+    .setName("about")
+    .setDescription("About SAP and where to get help"),
+
+  new SlashCommandBuilder()
     .setName("status")
     .setDescription("Show current auto-publish settings"),
 
@@ -205,7 +209,7 @@ new SlashCommandBuilder()
   .setDescription("Show audit channel"),
 
 ].map(command => command
-  .setDefaultMemberPermissions(PermissionsBitField.Flags.ManageGuild)
+  .setDefaultMemberPermissions(command.name === "about" ? null : PermissionsBitField.Flags.ManageGuild)
   .setContexts(InteractionContextType.Guild)
   .setIntegrationTypes(ApplicationIntegrationType.GuildInstall)
   .toJSON());

@@ -35,6 +35,10 @@ SAP uses multiple slash commands. All commands are for server use and require Ma
 
 Changes to command registration take effect only after running the deployment script for the intended scope. Restarting the bot alone does not update command visibility.
 
+### About and support
+
+`/about` is available to all server members and links to the [Brio Bots support channel](https://discord.com/channels/1550119459891576852/1550120069051187250). Members must join Brio Bots before they can open that channel. The bot does not currently include a verified public invite link; add one before relying on this command for public onboarding.
+
 ### Status
 
 ```text id="m66rmw"
