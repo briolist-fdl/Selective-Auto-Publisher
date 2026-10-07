@@ -37,7 +37,7 @@ Changes to command registration take effect only after running the deployment sc
 
 ### About and support
 
-`/about` is available to all server members and links to the [Brio Bots support channel](https://discord.com/channels/1550119459891576852/1550120069051187250). Members must join Brio Bots before they can open that channel. The bot does not currently include a verified public invite link; add one before relying on this command for public onboarding.
+`/about` is available to all server members and provides the [Brio Bots SAP-channel invite](https://discord.gg/eN75kTXWjb) plus a [direct channel link](https://discord.com/channels/1550119459891576852/1557068949412380782) for existing members. The invite was checked against Discord on 2026-10-08: it points to the `selective-auto-publisher` channel in Brio Bots and has no expiration time. This does not verify future invite validity or channel visibility for every member.
 
 ### Status
 

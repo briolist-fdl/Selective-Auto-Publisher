@@ -603,7 +603,7 @@ client.on("interactionCreate", async (interaction) => {
 
     if (interaction.commandName === "about") {
       await interaction.reply({
-        content: "Selective Auto Publisher helps server teams publish matching posts from announcement channels. For help, visit the [Brio Bots support channel](https://discord.com/channels/1550119459891576852/1550120069051187250). You need to be a member of Brio Bots to open the channel.",
+        content: "Selective Auto Publisher helps server teams publish matching posts from announcement channels. For help, [join the SAP channel in Brio Bots](https://discord.gg/eN75kTXWjb). Already a member? [Open the SAP channel](https://discord.com/channels/1550119459891576852/1557068949412380782).",
         ephemeral: true,
         allowedMentions: { parse: [] }
       });
