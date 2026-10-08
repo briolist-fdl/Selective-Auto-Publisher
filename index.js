@@ -68,7 +68,7 @@ async function validateSourceChannel(interaction, channelId) {
       PermissionsBitField.Flags.ManageMessages
     ];
     if (!permissions?.has(required)) {
-      problem = "I need View Channel, Send Messages, and Manage Messages in that announcement channel.";
+      problem = "SAP needs View Channel, Send Messages and Manage Messages in that announcement channel. Manage Messages lets SAP publish qualifying posts to follower servers. Limit the bot role to the channels you choose for SAP.";
     }
   }
   if (problem) {
@@ -603,7 +603,7 @@ client.on("interactionCreate", async (interaction) => {
 
     if (interaction.commandName === "about") {
       await interaction.reply({
-        content: "Selective Auto Publisher helps server teams publish matching posts from announcement channels. For help, [join the SAP channel in Brio Bots](https://discord.gg/eN75kTXWjb). Already a member? [Open the SAP channel](https://discord.com/channels/1550119459891576852/1557068949412380782).",
+        content: "Selective Auto Publisher helps server teams publish matching posts from announcement channels. It only processes channels an administrator explicitly adds. SAP needs Manage Messages there to publish qualifying posts to follower servers. For help, [join the SAP channel in Brio Bots](https://discord.gg/eN75kTXWjb). Already a member? [Open the SAP channel](https://discord.com/channels/1550119459891576852/1557068949412380782).",
         ephemeral: true,
         allowedMentions: { parse: [] }
       });

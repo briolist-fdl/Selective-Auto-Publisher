@@ -39,6 +39,8 @@ Changes to command registration take effect only after running the deployment sc
 
 `/about` is available to all server members and provides the [Brio Bots SAP-channel invite](https://discord.gg/eN75kTXWjb) plus a [direct channel link](https://discord.com/channels/1550119459891576852/1557068949412380782) for existing members. The invite was checked against Discord on 2026-10-08: it points to the `selective-auto-publisher` channel in Brio Bots and has no expiration time. This does not verify future invite validity or channel visibility for every member.
 
+SAP only processes announcement channels that an administrator explicitly adds. It needs Manage Messages in those channels to publish qualifying posts to follower servers. Administrators can limit the SAP bot role to the channels selected for publishing.
+
 ### Status
 
 ```text id="m66rmw"
@@ -212,6 +214,7 @@ SAP needs the Discord permissions required to:
 
 * read relevant announcement channels
 * publish messages in announcement channels
+* manage messages in the announcement channels selected for publishing
 * use slash commands
 * send ephemeral command responses
 * write to the configured audit channel, if one is set
