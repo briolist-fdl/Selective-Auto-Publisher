@@ -6,7 +6,7 @@ It is built for servers that need more control over which bot-generated messages
 
 ## Add Selective Auto Publisher to a server
 
-[Install Selective Auto Publisher](https://discord.com/oauth2/authorize?client_id=1493291008509739158&scope=bot%20applications.commands&permissions=91136&integration_type=0)
+[Install Selective Auto Publisher](https://discord.com/oauth2/authorize?client_id=1493291008509739158&scope=bot%20applications.commands&permissions=93184&integration_type=0)
 
 The link requests Guild Install with permission to view announcement channels, read message history, send messages, embed links and manage messages. A server administrator chooses the channels SAP may process.
 
