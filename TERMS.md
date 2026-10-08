@@ -69,7 +69,7 @@ SAP is built as an open source community tool.
 
 If SAP helps your server, you can support further development by contributing feedback or issues on GitHub, or by supporting the developer here:
 
-https://buymeacoffee.com/andreasviken
+https://buymeacoffee.com/briolist
 
 ## Changes
 

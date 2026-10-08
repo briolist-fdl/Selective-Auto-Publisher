@@ -242,12 +242,12 @@ Selective Auto Publisher is built as an open source community tool.
 
 If it helps your server, you can support further development by voting for the bot when voting pages are available, contributing feedback or issues on GitHub, or supporting the developer here:
 
-https://buymeacoffee.com/andreasviken
+https://buymeacoffee.com/briolist
 
 ## Links
 
 * GitHub: https://github.com/briolist-fdl/selective-auto-publisher
-* Support development: https://buymeacoffee.com/andreasviken
+* Support development: https://buymeacoffee.com/briolist
 
 ## License
 
