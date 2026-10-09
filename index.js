@@ -31,6 +31,7 @@ import {
   getChannelPublishFilters
 } from "./db.js";
 import { maybeAddSupportMessage } from "./src/shared/supportDevelopment.js";
+import { buildPublicDemoAudit } from "./src/publicDemoAudit.js";
 
 const envToken = process.env.BOT_TOKEN;
 
@@ -455,6 +456,19 @@ async function sendAuditLog(message, eventType, filterResult) {
 
   const channel = await client.channels.fetch(auditChannelId).catch(() => null);
   if (!channel || channel.guildId !== guildId || !channel.isTextBased() || typeof channel.send !== "function") return;
+
+  const publicDemoAudit = buildPublicDemoAudit({
+    enabled: process.env.BRIO_BOTS_DEMO_AUDIT_ENABLED === "true",
+    guildId,
+    sourceChannelId: message.channelId,
+    auditChannelId,
+    eventType,
+    filterResult
+  });
+  if (publicDemoAudit) {
+    await channel.send(publicDemoAudit);
+    return;
+  }
 
   const checkedContentTypes = getCheckedContentTypes(message);
   const searchablePreview = getSearchablePreview(message, 100);
