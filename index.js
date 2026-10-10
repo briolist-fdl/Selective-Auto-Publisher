@@ -617,8 +617,11 @@ client.on("interactionCreate", async (interaction) => {
 
     if (interaction.commandName === "about") {
       await interaction.reply({
-        content: "Selective Auto Publisher helps server teams publish matching posts from announcement channels. It only processes channels an administrator explicitly adds. SAP needs Manage Messages there to publish qualifying posts to follower servers. For help, [join the SAP channel in Brio Bots](https://discord.gg/eN75kTXWjb). Already a member? [Open the SAP channel](https://discord.com/channels/1550119459891576852/1557068949412380782).",
-        ephemeral: true,
+        content:
+          "Selective Auto Publisher publishes selected announcement posts using each server's rules.\n\n" +
+          "Start with `/channel-add`, then choose eligible bots and keyword filters. SAP needs Manage Messages in the source channel.\n\n" +
+          "Help and updates: [Join BrioBots](https://discord.gg/eN75kTXWjb) · [#selective-auto-publisher](https://discord.com/channels/1550119459891576852/1557068949412380782)",
+        flags: MessageFlags.Ephemeral | MessageFlags.SuppressEmbeds,
         allowedMentions: { parse: [] }
       });
       return;
