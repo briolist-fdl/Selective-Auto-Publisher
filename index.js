@@ -618,7 +618,7 @@ client.on("interactionCreate", async (interaction) => {
     if (interaction.commandName === "about") {
       await interaction.reply({
         content:
-          "Selective Auto Publisher publishes selected announcement posts using each server's rules.\n\n" +
+          "SelectiveAutoPublisher publishes selected announcement posts using each server's rules.\n\n" +
           "Start with `/channel-add`, then choose eligible bots and keyword filters. SAP needs Manage Messages in the source channel.\n\n" +
           "Help and updates: [Join BrioBots](https://discord.gg/eN75kTXWjb) · [#selective-auto-publisher](https://discord.com/channels/1550119459891576852/1557068949412380782)",
         flags: MessageFlags.Ephemeral | MessageFlags.SuppressEmbeds,

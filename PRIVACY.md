@@ -1,8 +1,8 @@
-# Privacy Policy for Selective Auto Publisher
+# Privacy Policy for SelectiveAutoPublisher
 
 Revision date: 2026-09-29 (applies when this revision is deployed)
 
-Selective Auto Publisher, or SAP, is a Discord bot for selectively publishing messages from announcement channels.
+SelectiveAutoPublisher, or SAP, is a Discord bot for selectively publishing messages from announcement channels.
 
 This privacy policy explains what data SAP stores and why.
 

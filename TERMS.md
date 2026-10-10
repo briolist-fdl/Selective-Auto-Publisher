@@ -1,8 +1,8 @@
-# Terms of Service for Selective Auto Publisher
+# Terms of Service for SelectiveAutoPublisher
 
 Effective date: 2026-07-03
 
-Selective Auto Publisher, or SAP, is a Discord bot for selectively publishing messages from announcement channels.
+SelectiveAutoPublisher, or SAP, is a Discord bot for selectively publishing messages from announcement channels.
 
 By adding or using SAP in a Discord server, you agree to these terms.
 

@@ -1,12 +1,12 @@
-# Selective Auto Publisher
+# SelectiveAutoPublisher
 
-Selective Auto Publisher, or SAP, is a Discord bot for selectively publishing messages from announcement channels.
+SelectiveAutoPublisher, or SAP, is a Discord bot for selectively publishing messages from announcement channels.
 
 It is built for servers that need more control over which bot-generated messages should be published, based on allowed bots, allowed keywords, blocked keywords, channels, and channel-specific filters.
 
-## Add Selective Auto Publisher to a server
+## Add SelectiveAutoPublisher to a server
 
-[Install Selective Auto Publisher](https://discord.com/oauth2/authorize?client_id=1493291008509739158&scope=bot%20applications.commands&permissions=93184&integration_type=0)
+[Install SelectiveAutoPublisher](https://discord.com/oauth2/authorize?client_id=1493291008509739158&scope=bot%20applications.commands&permissions=93184&integration_type=0)
 
 The link requests Guild Install with permission to view announcement channels, read message history, send messages, embed links and manage messages. A server administrator chooses the channels SAP may process.
 
@@ -244,7 +244,7 @@ SAP is not designed as a general-purpose message archive.
 
 ## Support development
 
-Selective Auto Publisher is built as an open source community tool.
+SelectiveAutoPublisher is built as an open source community tool.
 
 If it helps your server, you can support further development by voting for the bot when voting pages are available, contributing feedback or issues on GitHub, or supporting the developer here:
 

@@ -220,7 +220,7 @@ const deployGlobalCommands =
   String(process.env.DEPLOY_GLOBAL_COMMANDS || "").toLowerCase() === "true";
 
 async function deployCommands() {
-  console.log("Deploying Selective Auto Publisher slash commands...");
+  console.log("Deploying SelectiveAutoPublisher slash commands...");
   console.log("Client ID:", clientId);
   console.log("Guild ID:", guildId || "(none)");
   console.log("Deploy global:", deployGlobalCommands);
@@ -245,18 +245,18 @@ async function deployCommands() {
 
   console.log(
     deployGlobalCommands
-      ? "Deploying Selective Auto Publisher commands globally."
-      : `Deploying Selective Auto Publisher commands to guild ${guildId}.`
+      ? "Deploying SelectiveAutoPublisher commands globally."
+      : `Deploying SelectiveAutoPublisher commands to guild ${guildId}.`
   );
 
   await rest.put(route, {
     body: deployGlobalCommands ? commands : commands.map(({ contexts, integration_types, ...command }) => command),
   });
 
-  console.log("Selective Auto Publisher slash commands deployed.");
+  console.log("SelectiveAutoPublisher slash commands deployed.");
 }
 
 deployCommands().catch((error) => {
-  console.error("Failed to deploy Selective Auto Publisher slash commands:", error);
+  console.error("Failed to deploy SelectiveAutoPublisher slash commands:", error);
   process.exit(1);
 });
